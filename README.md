@@ -5,6 +5,9 @@ are provided as examples of the types of things I work on, but aren't intended
 to necessarily be valuable to anyone.  In some cases, the code no longer builds
 with latest tools. 
 
+Everything here is of my own invention and independent work.  References to
+'RealProven, LLC' are to my own company.
+
 The code and ideas are under copyright by me and _only_ provided for 
 informational purposes.  No license is provided or implied by their publication.
 
@@ -16,5 +19,6 @@ informational purposes.  No license is provided or implied by their publication.
 ## [ChatSeal](./ChatSeal)
 
 App for delivering secure chat over Twitter using steganography, built in the 
-iOS4-7 timeframe.  It was in the App Store for a brief period.  
+iOS4-7 timeframe.  It was published and in the App Store for a brief period and
+worked successfully with Twitter back then. 
 
