@@ -1,5 +1,12 @@
 Language Notes
 
+Background
+	- This language is an obvious derivative of C/C++ language variants, 
+	particularly modern Swift (maybe a tiny bit of TypeScript/JavaScript), 
+	but with the philosophical simplicity of Go.   The main idea is to build
+	something that is familiar enough to be learned quickly but introduces
+	some new ideas where it matters.
+
 Principles:
 	- Systems are fundamentally independent entities that may safely
 	move all manner of fine-grained data abstractions in and out of their
