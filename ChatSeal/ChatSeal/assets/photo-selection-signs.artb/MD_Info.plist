@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>kDKDrawingInfoTitle</key>
+	<string>photo-selection-signs</string>
+	<key>kdkdrawinginfocreationdate</key>
+	<date>2013-05-28T14:51:37Z</date>
+	<key>kdkdrawinginfodimensionsshortunits</key>
+	<string>cm</string>
+	<key>kdkdrawinginfodimensionsunits</key>
+	<string>centimetres</string>
+	<key>kdkdrawinginfodraughter</key>
+	<string>Francis Grolemund</string>
+	<key>kdkdrawinginfodrawingdimensions.size_height</key>
+	<string>20.000000</string>
+	<key>kdkdrawinginfodrawingdimensions.size_width</key>
+	<string>20.000000</string>
+	<key>kdkdrawinginfodrawingnumber</key>
+	<string>A2-000265-0001</string>
+	<key>kdkdrawinginfodrawingnumberunformatted</key>
+	<integer>265</integer>
+	<key>kdkdrawinginfodrawingprefix</key>
+	<string>A2</string>
+	<key>kdkdrawinginfodrawingrevision</key>
+	<integer>1</integer>
+	<key>kdkdrawinginfolastmodificationdate</key>
+	<date>2013-05-28T14:51:37Z</date>
+</dict>
+</plist>
