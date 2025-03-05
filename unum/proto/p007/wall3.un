@@ -1,0 +1,70 @@
+// Variant-3:  multi-client concurrency
+// - permit a fixed number of concurrent clients
+// - highlights pause on disconnect
+
+// - this named subsystem, highlights that everything inside it is concurrent
+//   until it is used 
+// - this system is designated a reference type by including the '&' token
+//   before the name and will dictate what kind of variables may hold it as
+//   seen below.
+// - each of these clients starts and runs concurrently with the main system
+system &Client {
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	// - an instance property must either (a) be initialized in every
+	//   init() method of the system or (b) in none of them and will be
+	//   initialized with a default initializer.
+	var term: unum.Terminal
+
+	// - init is executed immediately after static/init property 
+	//   initializations (again all non-inited() properties)
+	public init() {
+		this.term = unum.Terminal.accept()
+	}
+
+	// - NOTE: a Terminal is implemented in HTTP assuming a Keep-Alive
+	//   interaction with its connection that is used to determine when
+	//   it is no longer used.  A browser without Keep-Alive is not 
+	//   supported in the MVP.
+
+	// - the immediate processing follows initialization
+	term.print("what is your name?\n")
+	var name = term.getline()
+
+	while true {
+		// - print the current list of messages, but a disconnect will
+		//   PAUSE the terminal and by extension the Client when it
+		//   is accessed.
+		for m in messages {
+			term.print(m)
+		}
+
+		term.print("message: ")
+		var msg = term.getline()
+
+		// - the terminal has a unique identifier for each connected
+		//   client session.
+		messages.append(name "@" + term.id + " > " + msg)
+	}
+}
+
+// - create up-to 5 clients, but save them as references
+// - variables are _by default_ always accessed _by value_ meaning that 
+//   assigning them creates a copy of the value, but for systems that should
+//   shared as opposed to being copied, they may be designated as a 
+//   reference which allows anything with access to the variable to modify
+//   its contents in a shared manner.  For systems that are best used by
+//   reference, you may optinally include a reference symbol in its declaration
+//   so that consumers preserve the expectation.
+var clients:[&Client]
+for i = 0; i < 5; i++ {
+	clients.append(Client())
+}
+
+// *************************
+// - upon reaching this point, the deployment remains RUNNING because when it 
+/    has subsystems that are not PAUSE(d) and either (a) in init() or (b) 
+//   immediate processing,  or (c) instance methods being executed 
+// - once these conditions are no longer true, the deployment will be moved to
+//   PAUSED  

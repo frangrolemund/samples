@@ -1,0 +1,19 @@
+// - implements a grafitti wall where clients can type text and it will
+//   be saved
+//      ...browser, service, db
+
+// - an alternative syntax for public (as opposed to specifying each one) is
+//   to just declare it as a grouped access specifier, which refers to the 
+//   rest of the content in the scope, including functions and variables down
+//   to the end of the scope
+// - this means the Message structure is not public outside this system, but
+//   its attributes are public inside the system.
+system Message { public:
+	var created: time
+	var text: string	
+}
+
+static var messages: [Message]
+
+
+// TODO: what does it mean to instantiate this deployment?

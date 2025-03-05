@@ -1,0 +1,31 @@
+// - highlights two different branches in the main timeline depending on 
+//   available common (static) data
+
+// - putting this outside the interface scope ensures it exists on the
+//   back-end.  It is conceivable that if something using the grid could have
+//   a static that is entirely inside the browser and saved in its local
+//   filesystem.
+static var messages: [string]
+
+while true {
+	// - the act of referencing a back-end static means that in order
+	//   to evaluate this loop, a list of the current messages must be
+	//   retrieved by the client to display all of them.
+	for m in messages {
+		// - for the _second_ client attached, this initiates a new
+		//   session after branching the timeline
+       		unum.io.print(m) 
+	}
+          
+	// - for the _first_ client attached (no messages), this initiates a
+	//   new session after branching the timeline
+        unum.io.print("message: ") 
+	var msg = unum.io.getline()
+
+	// - the act of referencing this static again means that this data
+	//   must be passed to the back-end so that it can be updated with
+	//   a new value.  Prefixing the id, ensures that the unique session
+	//   is included before each message, making them client-specific.
+        messages.append(unum.io.id + " > " + msg)    
+}
+

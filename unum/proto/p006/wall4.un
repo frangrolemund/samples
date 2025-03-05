@@ -1,0 +1,58 @@
+// Variant-4:  multi-client concurrency with completion
+// - same behavior as variant-3 with exit capabilities
+
+system Client {
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	// - creating a new IO instance blocks until a client is available
+	var io: unum.IO
+
+	// - init runs after pre-init and must initialize any uninitialized
+	//   properties in the system space, which in this case is the 'io'
+	//   property
+	init() {
+		// - creating an instance of IO waits for a client before 
+		//   initialization may proceed.
+		// - this is not strictly required, since the property would
+		//   have been initialized automatically with default behavior
+		//   before invoking main()
+		this.io = unum.IO()
+	}
+
+	// - main is a single use, isolated concurrency domain with a system 
+	//   that is invoked after pre-init and init() are completed
+	func main() {
+		// - the instance 'io' property is unique to the client and
+		//   provided an 'id' automatically that references its session
+		this.io.print("what is your name?\n")
+		var name = this.io.getline()
+
+		while true {
+			// - print the current list of messages
+			for m in messages {
+				this.io.print(m)
+			}
+
+			this.io.print("message (or 'q' to quit): ")
+			var msg = this.io.getline()
+			if msg == "q" {
+				break
+			}
+
+			messages.append(name "@" + this.io.id + " > " + msg)
+		}
+	}
+}
+
+// - create up-to 5 clients 
+var clients:[Client]
+for i = 0; i < 5; i++ {
+	// - this will block until a connection is completed
+	clients.append(Client())
+}
+
+// *************************
+// - upon reaching this point, the deployment will remain RUNNING while 
+//   clients are engaged, but when all five have quit, it will be moved to 
+//   PAUSED because each main() was exited.

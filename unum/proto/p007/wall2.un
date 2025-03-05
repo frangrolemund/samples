@@ -1,0 +1,56 @@
+// ***********************************************************
+// Variant-2:  simple execution in sub-system as immediate
+//             processing
+// - same behavior as Variant-1, but in an isolated subsystem.
+// ***********************************************************
+
+// - creates an anonymous subsystem that is functionally equivalent to
+//   variant-1, but the subsystem runs concurrently with the code here
+var sub = system {
+	unum.log.info("Anonymous system started.")
+
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	const term = unum.Terminal.accept()
+
+	// - printing the messages will display the prior content after every 
+	//   restart
+	for m in messages {
+		term.print(m)
+	}
+
+	// - the io instance represents the distributed connection between a 
+	//   client and this service.
+	term.print("what is your name?\n")
+	public var name = term.getline()
+
+	term.print("message: ")
+	var msg = term.getline()
+
+	// - appending the messages saves it persistently
+	messages.append(name + " > " + msg)
+
+	unum.log.info("Anonymous system finished.")
+}
+
+// - after `sub` is instantiated, the immediate processing in the anonymous 
+//   system may still be running (eg, still waiting on the Terminal connection),
+//   but the code here will proceed because both operate concurrently by default
+// - the evidence of this is that the 'finished' log message above will always
+//   follow this 'waiting' message.
+unum.log.info("Waiting for completion.")
+
+// - the act of interfacing a system to access a property or calling a  method 
+//   requires that both its initialization and immediate processing be completed
+//   before the reference is resolved.  This line will _block_ until the 
+//   subsystem completes and *always* is printed last in the log.
+unum.log.info("Completed processing with " + sub.name)
+
+// *************************
+// - upon reaching this point, if any systems in the deployment are executing
+//   any code, it will have a status of RUNNING.  When all systems have
+//   completed initialization, immediate processing and any static/instance 
+//   method processing, the deployment will be reported as PAUSED and may only 
+//   be restarted, at which time the session will be discarded and a different
+//   connection may be initiated.

@@ -1,0 +1,61 @@
+// Variant-3:  multi-client concurrency
+// - permit a fixed number of concurrent clients
+
+system Client {
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	// - creating a new IO instance blocks until a client is available
+	var io: unum.IO
+
+	// - init runs after pre-init and must initialize any uninitialized
+	//   properties in the system space, which in this case is the 'io'
+	//   property
+	init() {
+		// - creating an instance of IO waits for a client before 
+		//   initialization may proceed.
+		// - this line is optional because the rules of initialization
+		//   state that it will be assigned a default value with the
+		//   default initializer after Client.init() completes.
+		this.io = unum.IO()
+	}
+
+	// - main is a single use, isolated concurrency domain with a system 
+	//   that is invoked after pre-init and init() are completed
+	func main() {
+		// - the instance 'io' property is unique to the client and
+		//   provided an 'id' automatically that references its session
+		this.io.print("what is your name?\n")
+		var name = this.io.getline()
+
+		// - a quality of the main() function is that it is run
+		//   concurrently with other systems in the deployment, which
+		//   permits this type of infinite loop without impacting the
+		//   behavior of everything else.
+		while true {
+			// - print the current list of messages
+			for m in messages {
+				this.io.print(m)
+			}
+
+			this.io.print("message: ")
+			var msg = this.io.getline()
+
+			messages.append(name "@" + this.io.id + " > " + msg)
+		}
+	}
+}
+
+// - create up-to 5 clients 
+var clients:[Client]
+for i = 0; i < 5; i++ {
+	// - this will block until a connection is completed
+	clients.append(Client())
+}
+
+// *************************
+// - upon reaching this point, the deployment remains RUNNING because it has
+//   subsystems that are either (a) in pre-init, (b) in init() or (c) in main(),
+//   and only when all subsystems are in none of these states will the
+//   deployment be moved to PAUSED.  Because main() above is an infinite loop,
+//   it may never enter PAUSED because the deployment completes execution.

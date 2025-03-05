@@ -1,0 +1,29 @@
+// - putting this outside the interface scope ensures it exists on the
+//   back-end.  It is conceivable that if something using the grid could have
+//   a static that is entirely inside the browser and saved in its local
+//   filesystem.
+static var messages: [string]
+
+// - initiates a new, unique session which then will branch the timeline
+//   with the side-effect that different connections (sessions) have different
+//   names associated with them.
+unum.io.print("what is your name?\n")
+var name = unum.io.getline()
+
+while true {
+	// - the act of referencing a back-end static means that in order
+	//   to evaluate this loop, a list of the current messages must be
+	//   retrieved by the client to display all of them.
+	for m in messages {
+       		unum.io.print(m) 
+	}
+           
+        unum.io.print("message: ") 
+	var msg = unum.io.getline()
+
+	// - the act of referencing this static again means that this data
+	//   must be passed to the back-end so that it can be updated with
+	//   a new value.  Concatenating allows different clients to interact.
+        messages.append(name + " > " + msg)    
+}
+

@@ -1,0 +1,34 @@
+// Variant-2:  simple execution in sub-system pre-init
+// - same behavior as Variant-1, but in an isolated subsystem.
+
+// - creates an anonymous subsystem that is functionally equivalent to
+//   variant-1 and blocks as long as its pre-init is running, which is the
+//   entirety of the content between braces
+var sub = system {
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	// - referencing 'unum.io' waits for a single client connection that 
+	//   operates  as a session for that I/O path.
+	// - printing the messages will display the prior content after every 
+	//   restart
+	for m in messages {
+		unum.io.print(m)
+	}
+
+	// - the io instance represents the distributed connection between a 
+	//   client and this service.
+	unum.io.print("what is your name?\n")
+	var name = unum.io.getline()
+
+	unum.io.print("message: ")
+	var msg = unum.io.getline()
+
+	// - appending the messages saves it persistently
+	messages.append(name + " > " + msg)
+}()
+
+// *************************
+// - upon reaching this point, the deployment is PAUSED because it _and all of
+//   its subsystems completed pre-init and may only be restarted, in which case
+//   the session will be discarded and a different connection may be initiated.

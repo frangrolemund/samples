@@ -1,0 +1,46 @@
+// Variant-1:  simple execution in pre-init
+// - sequential programming
+// - client connection with primitive UI
+// - deployment lifecycle, RUNNING to PAUSED
+
+// - declaring this static indicates it is persisted with the system
+static var messages: [string]
+
+// - referencing 'unum.io' waits for a single client connection that operates
+//   as a session for that I/O path.
+// - `unum.io` is a convenience property to allocate an IO() system that can
+//   establish a single connection to the default interface
+// - printing the messages will display the prior content after every restart
+for m in messages {
+	unum.io.print(m)
+}
+
+// - the io instance represents the distributed connection between a client
+//   and this service.
+unum.io.print("what is your name?\n")
+var name = unum.io.getline()
+
+unum.io.print("message: ")
+var msg = unum.io.getline()
+
+// - appending the messages saves it persistently
+messages.append(name + " > " + msg)
+
+// *************************
+// - upon reaching this point, the deployment is PAUSED because it completed
+//   pre-init and may only be restarted, in which case the session will be 
+//   discarded and a different connection may be initiated.
+
+// - a deployment in a PAUSED state retains all of its operating data for
+//   examination through the interface to the basis (CLI)
+
+// - there is no concept of EXITED in unum because a system that does not exist
+//   is simply discarded along with its resources.  The deployment is never
+//   auto-discarded because it may have important persisted data that would be 
+//   discarded if it were.  Furthermore there's not a clear notion of what it
+//   would mean to _exit_ a distributed system made up of one server and three
+//   clients.  Does it mean all four exit their related processes, or just the
+//   server?  
+
+// - a restart discards any transient data and resources (connections)
+

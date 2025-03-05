@@ -1,0 +1,52 @@
+// Variant-4:  multi-client concurrency with completion
+// - same behavior as variant-3 with exit capabilities
+// - highlights pause prevention and recovery
+
+system &Client {
+	// - declaring this static indicates it is persisted with the system
+	static var messages: [string]
+
+	// - populated during init()
+	var term: unum.Terminal
+
+	public init() {
+		this.term 		    = unum.Terminal.accept()
+		this.term.pauseOnDisconnect = false
+	}
+
+	// - NOTE: a Terminal is implemented in HTTP assuming a Keep-Alive
+        //   interaction with its connection that is used to determine when
+        //   it is no longer used.  A browser without Keep-Alive is not 
+        //   supported in the MVP.
+
+	term.print("what is your name?\n")
+	var name = term.getline()
+
+	while true {
+		// - print the current list of messages
+		for m in messages {
+			term.print(m)
+		}
+
+		term.print("message (or 'q' to quit): ")
+		var msg = term.getline()
+		if msg == "q" || !term.isConnected {
+			break
+		}
+
+		messages.append(name "@" + term.id + " > " + msg)
+	}
+}
+
+// - create up-to 5 clients 
+var clients:[&Client]
+for i = 0; i < 5; i++ {
+	clients.append(Client())
+}
+
+// *************************
+// - upon reaching this point, the deployment will remain RUNNING while 
+//   clients are engaged, but when all five have quit, it will be moved to 
+//   PAUSED because each init/immediate processing has completed
+// - none of the Clients will pause because none of the Terminals will PAUSE,
+//   ensuring all will remain RUNNING until they get connections and exit

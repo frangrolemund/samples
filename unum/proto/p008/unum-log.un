@@ -1,0 +1,15 @@
+// ****************************************************
+// Variant-1: Standard system, `unum`
+// - implements logger interface
+// ****************************************************
+
+public const log = system {
+	// - this method emits a single undecorated line to the deployment
+	//   log representing the logging for main system across all physical
+	//   platforms.
+	// - it is decorated with the `native' keyword indicating that the
+	//   implementation is intended to be a native one fully implemented
+	//   by the author of this code in a similarly-named file `unum-log.c`
+	public native func print(msg: string)
+}
+

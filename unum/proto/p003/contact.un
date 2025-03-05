@@ -1,0 +1,66 @@
+// - implements a contact sheet system that generates three tiers: 
+//	...browser, service, db
+
+/*
+ *  Data
+ */
+struct Person {
+	id: number
+	name: string
+	joined: time 
+	isSpecial: bool
+	age: number
+}
+
+// - the act of declaring a variable in global scope implies persistence, which
+//   can also be indicated in local scopes with the 'static' keyword.
+// - since this is a hash it guarantees uniqueness with its primary key
+var people: [number : Person]
+
+// - the easiest way to create a service is to iteratively create and
+//   poll on requests, which in this case creates a loop of generating 
+//   a page and accepting one request.
+// - IDEA: is it possible that the compiler instantiates this loop for every
+//   codepath that requires it so that the programmer works in terms of 'one'
+//   but the compiler supports unlimited.   That is:
+//	- the code is executed the first time and the system understands
+//	  the static storage and the entrypoint.
+//	- the recv() method is naturally concurrent although the code doesn't
+//	  require knowledege of it
+//	- when it is executed, it is flagged internally as a concurrent branch
+//	  which 'clones' the context after it is executed for each guy coming
+//	  through
+//	- each caller works in terms of a single context and doesn't worry about
+//	  storage
+for {
+	const vw: unum.ui.View = { person: Person, subviews: [
+		Label("Contact Form", .title)
+
+		Padding()
+		Label("Enter a Contact:")
+		HGroup {subviews: [
+			Label("Name:")
+			Field(&person.name)
+		]}
+		HGroup {subviews: [
+			Label("Age:")
+			Field(&person.age)
+		])
+		Button("Submit", func () {
+			this.send(this.person)	
+		})
+		
+		Padding()
+		Label("Contacts")
+		for p in people {
+			HGroup{ subviews: [
+				Label(p.name)
+				Label(p.age)
+			])	
+		}
+	]}
+
+	const p = vw.recv()
+	people.append(p)
+}
+

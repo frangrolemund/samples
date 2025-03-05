@@ -1,0 +1,52 @@
+// - implements a contact sheet system that generates three tiers: 
+//	...browser, service, db
+
+// ...these imports work similarly to Golang where the package is referenced
+//    and then the final component is the symbol.  I prefer dot notation over
+//    slashes I think.
+import unum.store
+import unum.ui as cui	// example of renaming an import
+
+/*
+ *  Database
+ */
+struct Person {
+	id: number
+	name: string
+	joined: datetime
+	isSpecial: bool
+	age: number
+}
+
+// - simple list 
+// - the act of calling a package function 'retain' automatically configures 
+//   a database table named for the variable, which also returns an instance 
+//   that can be referenced in the later expression.
+// - if the 'store' were not called, the list would be in-memory.
+// - the returned 'Store' instance has hierarchies of specialization that
+//   can be used to further refine its behavior when necessary.
+// - NOTE: the use of 'setUnique' or 'setNotNull' could introduce an interesting
+//         deployment scenario if those lines where deleted in an updated
+//  	   source file.  In theory that implies a delta to the db config that
+//	   must be applied before proceeding.
+const people: [Person]
+store.retain(&people)
+	.setUnique(Person.id)
+	.persisted.rename(Person.isSpecial, as: 'is_special')
+	.persisted.rdb.declare(Person.name, .varchar(255))
+	.persisted.rdb.setNotNull(Person.name)
+	.persisted.rdb.setNotNull(Person.age)
+
+// - simple hash
+// - the act of indexing a hash causes it to share the same storage as the 
+//   list, which in this case introduces a primary key on the database and
+//   an efficient lookup.
+const ipeople: [number: Person]
+ipeople.index(&people, by: Person.id)
+
+/*
+ *  Interface
+ */
+// TODO: I think it should be a form with an 'add' button and a list of all the
+//       current people
+

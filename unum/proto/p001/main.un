@@ -1,0 +1,43 @@
+/*
+ *  Contact form: provide a simple way to sign up to receive e-mails.
+ */
+
+// TODO: db initialization
+// ...global variable produces retained online service
+const db = Database("contacts")	
+// ...chaining.
+pTable = db.addTable("people")
+		.addColumn("id", number, .unique)
+		.addColumn("email", .text)
+		.addColumn("name", .text)
+		.addIndex("id")
+		.addIndex("email")
+
+// TODO: API wiring
+func getUserId(email: text) -> number {
+	// ...reference of system entity
+	result = db.run("SELECT id, name FROM people WHERE email='%s';", text)
+	// ...error auto-casts to error with short-circuit
+	return result[0][0]
+}
+
+func saveContact(email: text, name: text) -> number {
+	curId = getUserId(email)
+	if isError(result) {
+		// ...multi-line string?
+		result = db.run("INSERT INTO PEOPLE (email,name) 
+				 VALUES('%s', '%s');", email, name)
+		// ...associative array
+		curId = result[0]["id"]	// ...or result[0][0]
+	}
+	return curId
+}
+
+// TODO: front-end
+...global produces retained online instance (non-const could be replaced?)
+v1 = View()
+v1.setAlignment(.center)
+	.addText("email", .required)
+	.addText("name", .required)
+	.addButton("submit")
+

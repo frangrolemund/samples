@@ -1,0 +1,79 @@
+// - implements a grafitti wall where clients can type text and it will
+//   be saved
+//	...browser, service, db
+
+// - aliases can be used to simplify access and by default create a local
+//   symbol named for the external one
+alias unum.terminal.prompt 
+alias unum.terminal.print
+alias unum.log
+
+// - the act of declaring a variable 'static' or implicitly static by using
+//   a variable in global scope implies persistence every time.  it will
+//   not be reset no matter how many times the system is restarted and saved
+//   persistently in a database
+static messages: [string]
+
+// - this 'system' is immediately run and builds a runtime context which is
+//   like its initial 'timeline' where it accumulates state and stack and so
+//   on.  if it doesn't block, it runs and then stops like a traditional 
+//   program (ie not RUNNING and not PAUSED)
+// - if it blocks on a method that can be concurrent, it creates a branch 
+//   in its timeline where its context is cloned for each thing that uses it.
+
+
+// - this loop will run infinitely for as many people as who wish to connect to 
+//   this system, each getting the list and then two prompts
+// - also, even though this is presented in a web browser
+while {
+	// - the 'print' is a multiplexing method which means it associates
+	//   the current context with of multiple inbound resoures.  if a
+	//   resource (ie web session) does not exist, it waits for it to
+	//   exist before returning.  if one exists, it ensures that resource
+	//   has a clone of the current context
+	// - notice the word 'session' and not 'connection' because of how
+	//   web interactions work.  there may be multiple connections that
+	//   are managed in this one context with a specific session for each
+	for m in messages {
+		// ...every type is itself a structure with the capacity to
+		//    have methods.  A string has the standard types of
+		//    string methods
+		// ...every time has a list of core attributes/methods like
+		//    .isError that indicates whether it is in an error state or
+		//    .isOk to indicate a normal useful state
+		print(m.toUpper())
+	}
+
+	// - the 'prompt' is also a multiplexing method which means that it
+	//   will wait for a session and HTTP request for this context before 
+	//   continuing
+	const msg:string = prompt("Type a message:")
+
+	// - any type of network error is propagated to the error state of
+	//   the variable, which when it exists can simply be checked in a
+	//   boolean expression.  using the builtin function error() retrieves
+	//   this value
+	if error(msg) {
+		// ...which we'll ignore but log it, noting that referencing
+		//    it in a string context converts it to a helpful string
+		//    value
+		// ...also note the hiearchy of methods in play here with the
+		//    builtin function 'error' being a reserved function in
+		//    the unum language that cannot be overridden, but the
+		//    method being a custom variant inside the 'log' type.
+		log.error("failed to receive message: " + error(msg))
+		continue
+	}
+
+	// - another 'prompt' also manages the same expectation for session.
+	const age:uint16 = prompt("Age:")
+
+	// - conversely, if age is 'in error', ie 'error(age)' then 
+	//   the act of using age will PAUSE the sysem in a fatal state
+	//   requiring it be restarted to run again, which is why you want to
+	//   check them when in doubt
+	messages.append(msg + ", age=" + age)
+
+	// - NOTE: looping here discards this context, which is a clone at this
+	//   point, which also discards its session and any connection
+}

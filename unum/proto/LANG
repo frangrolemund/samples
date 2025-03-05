@@ -1,0 +1,486 @@
+Language Notes
+
+Principles:
+	- Systems are fundamentally independent entities that may safely
+	move all manner of fine-grained data abstractions in and out of their
+	processing contexts.
+
+	- Everything is a system, down to the most fundamental primitive type.
+	
+	- All costs of linkage are hidden from the system code and addressed 
+	entirely in the basis, representing the ideal.
+
+		- COROLLARY: The ideal is impossible but motivates continued 
+		improvement in compilation, linkage and basis capability to 
+		methodically reduce link volume.
+
+	- Linkage reliability must be systemic, not isolated.  It is improved 
+	in the basis and kernels, not the logic of systems. Build better 
+	monitoring, redundancy, and resolution into the foundations.
+
+	- The language model focuses on _composition_, not inheritance.  
+	System capability is derived from the sum of all of its parts, not a 
+	byproduct of its lineage.
+
+	- The first responsibility of the deployment is to minimize 
+	unpredictability of behavior caused by failures of linkage
+
+		- PAUSE(ing) occurs when a system cannot reconcile its state
+		with the basis and the result is unpredictable.  this can be
+		described as an imprecise understanding by the system or the
+		developer of a specific linkage with the basis.
+
+		- a system that references a property or method of a PAUSE(ed)
+		system will itself be PAUSE(ed)
+
+		- reconciliation with owned basis resources may be automated by
+		the kernel
+		
+		- reconciliation with unowned basis resources must be automated
+		with custom logic (ie code)
+
+
+Vocabulary:
+	- 'deployment': the complete set of hardware and software allocated
+	to an unum systemic programming architecture
+
+	- 'basis': also, _architectural basis_, refers to the sum of shared
+	compute resources assigned to an unum deployment.  The basis is first
+	created by initializing a directory for unum development and its 
+	configuration and state is saved in a .unum subdirectory there.
+
+	- 'owned resource': a compute resource assigned to the deployment which
+	is in the control of the development organization hosting the
+	deployment.  Examples: servers-CPU/disk, databases, gateways, etc.
+
+	- 'unowned resource': a compute resource assigned to the deployment 
+	which is *NOT* in the control of the development organization hosting 
+	the deployment.  Examples: mobile phone CPU, client desktop disk, 
+	third-party RESTful services.
+
+	- 'system': a self-contained domain of programming logic
+
+	- 'system folder': a directory in a deployment with source code
+
+	- 'main' system: the organizing topmost system folder in a deployment 
+	and is the same where the basis is defined with the .unum subdirectory.
+
+	- 'deploy': the act of instantiating the main system to a basis, 
+	creating or enhancing a _deployment_.
+
+	- 'core': a non-uniform, transient unit of computation within the
+	deployment offering one or more points of integration into the basis
+
+	- 'flow': the movement of data into or out of a system
+	
+General:
+	- hierarchical structures in everything from concepts, languages, and
+	types
+
+System:
+	- the fundamental unit of computation is a system, and all entities
+	within the unum programming environment, including primitives, can
+	be decomposed into systems.
+
+	- a system is an association of data and the operations that are/may be
+	performed on the data, much like object-oriented programming.
+
+	- systems are built by composition, not inheritance and may be 
+	composed by hierarchy (systems with sub-system properties) and/or 
+	union (systems with interfaces with or without default processing)
+
+	- a system is naturally concurrent with all other systems in the
+	deployment, but enforces transactional access to its properties; this
+	intentionally mirrors behavior described by actor-based designs.
+
+	- a system may be in one of two states: RUNNING or PAUSED.  There is
+	no concept of an 'exited' system, a system either exists or it does 
+	not.
+
+	- a system that is unable to proceed without intervention by the
+	basis is PAUSED.  In this context, intervention may be automatic or
+	user-directed.
+
+	- a system waiting on service is still RUNNING.
+
+	- a system that is unable to proceed because it depends on the
+	resources of a PAUSED system, is itself PAUSED by association.
+
+	- a PAUSED system is automatically persisted until it resumes 
+	RUNNING.
+
+	- any system may be moved from PAUSED to RUNNING by addressing its
+	obstacle, but only the main system may be re-instantiated in place to
+	move from PAUSED back to RUNNING 
+
+	- systems are made up of zero or more properties, functions, subsystems,
+	and expressions.
+
+	- all attributes of a system are unavailable to consumers outside the
+	system by default (private) and must be adorned with the `public` 
+	keword to be accessible.  
+
+	- subsystems of a system may access all private attributes of their 
+	parent systems without restriction.
+
+	- a function that is not adorned with the `static` keyword is an
+	instance function, also described as a _method_.
+
+	- properties are either static or instance.  Static properties are
+	automatically persisted within the deployment.
+
+	- instance properties are only relevant to a created instance of
+	the system that has been fully initialized.
+
+	- when a system is used, it is first initialized.  
+
+	- when the static system is first used, all static properties
+	of the system from top-to-bottom are initialized.
+
+	- when a system instance is initialized:
+		- static initialization is performed if not yet completed
+		- all instance properties that are not explicitly initialized 
+		in init() methods are initialized with default values
+		- if a matching system initializer exists for the the
+		parameterized init() invocation, it will be invoked.  A
+		initializer method is always called init() and includes zero or
+		more parameters for customization.  The default initializer
+		is always init().  If one or more initializers are defined
+		for a system, only they may be used to initialize it with 
+		matching parameters.
+		- any code outside a method declaration but inside the system
+		scope is executed from top to bottom in what is described as
+		'immediate processing'.
+
+	- while a system is being initialized statically or for an instance,
+	all outside integrations into that system are blocked until 
+	initialization and immediate processing completes
+
+	- a system that is instantiated retains resources provided by the
+	basis.  these can be as simple as transient memory (for primitives)
+	and as complex as persistent storage or integrations into more complex
+	resources
+
+	- immediate processing in a system may return a value of a fixed type, 
+	in which case the system is described as a _converting system_ whereby 
+	any variable that receives an instance of that system must/is typed
+	for the return value and may not be used until immediate processing
+	completes.
+
+	- when a system accesses properties in the system itself, a 
+	transaction is started in the first function (or immediate) of the
+	system that accesses any property and completed when that function 
+	completes.
+
+	- when a system accesses properties of another system, either declared 
+	as public or from a parent system, only operational correctness
+	is guaranteed, but without automatic multi-property transactional
+	behavior.
+
+	- a system folder organizes a system named for the directory in which
+	it exists with all associated code in that directory.  The root of a
+	deployment is not named for its directory and has no name within the
+	deployment codebase (ie cannot be instantiated) and is simply referred
+	to as 'main'
+
+	- the unum source files in a system folder are interpreted as a single 
+	unit concatenated together according to the following rules:
+		- source files must be explicitly added to the deployment and
+		their identification retained in the basis.	
+		- all source files are concatenated in alphabetical order by 
+		file name
+
+	- a system is defined either by:
+		- implicitly in the main system
+		- explicitly with the syntax `system <name> { ... }`
+		- anonymously with the syntax `sytem { ... }`
+
+	- initializing a system instance is performed by:
+		- implicitly for the main system by the deployment
+		- explicitly by name and an initializer, as in `var x = Foo()`
+		- explicitly with an anonymous system, with the trailing
+		parenthesis optional for default initialization and only
+		necessary for invoking a custom initializer as in:
+			`var y = system { ... }`
+			`var z = system { ... }(5, 'cat')`
+
+	- a system may be declared or instantiated with an `&` token to 
+	indicate it will be used by reference (see below).  Examples include:
+			`system & Bar { ... }`
+			`var a = system & { ... }`
+			`var b: &Baz = Baz()`
+			`var c = &Foo(1, 2, 3)`
+			`func doSomething(value: &FooBar)`
+
+Interfaces:
+	- interfaces are contract-defining systems that establish a public
+	set of one or more properties and/or methods that are provided by a 
+	system adopting its contract
+
+	- the purpose of an interface is to compose by unions, which 
+	unlike hiearchies of systems, combines all contracts into a single
+	system contract.
+
+	- all `public` elements (inc. methods, properties, statics, types, etc)
+ 	of an interface must be exported publicly from its composing system or 
+	it is a compiler error.
+
+	- the syntax for defining an interface is: 
+		`interface <name> { .. }
+
+	- it is recommended interfaces are prefixed with a capital 'I' to
+	highlight their difference from systems.
+
+	- a system adopts one or more interfaces with the `composing` keyword:
+		`system Foo composing IBar { ... }`
+		`system Baz composing IEmployee, ICustomer { ... }`
+		`system composing ICar { ... }`  (anonymous system)
+
+	- an interface may compose other interfaces in the samme way:
+		`interface IHorse composing IAnimal`
+		`interface IImaginary composing INumber, IEquatable`
+
+	- in their most natural application, interfaces operate the same way as
+	they do in other languages.  A public function is defined in the 
+	interface without any implementation and indicates the composing system
+	must implement the same function signature and provide a custom 
+	implementation.  it is a compiler error to define a non-public abstract
+	function signature.
+
+	- interfaces may be also implemented using most of the same techniques 
+	as are used in system design, including immediate processing, with 
+	these exceptions:
+		* an interface *may not* implement a converting system pattern.
+		* an interface requires at least one public symbol
+		* interfaces may not be directly instantiated
+		* interfaces may not have public initializers (ie init())
+		* interfaces may include non-public custom initializers with
+		default implementations, but one must be invoked explicitly by 
+		the composing system
+
+	- because an interface may be developed like a system, it can include
+	default implementations of all of its public methods in addition to
+	any number of non-public attributes.
+
+	- within a composing system, any of its composed interfaces or their 
+	attributes may be addressed using the interface name to identify them:
+		`IApple` to refer to the IApple interface
+		`IDatabase.startup` to refer to the startup attribute (function
+			or property) of the IDatabase interface.
+		`INetwork.connect()` to invoke the connect() default method
+			of the INetwork interface.	
+	
+	- it is acceptable for multible interfaces to mandate the same signature
+	or compose the same common interfaces themselves.  The composing 
+	function will simply need to implement the unifying signature.
+
+	- when an interface includes an implementation, it should be imagined
+	as a _singleton instance_ of a system that is started within its
+	composing system and operates identicially to a system except for the
+	exceptions provided above, specifically:
+		* it operates concurrently within the transaction of the
+		composing system
+		* each of the interfaces are started in order of declaration
+		during system initialization, unless they have non-public
+		initializers
+		* an interface with non-public initializers must have one
+		explicitly invoked by the composing system during init() or 
+		immediate processing using the function syntax described above,
+		resembling something of the form: `ICache.init(size: 15)`
+
+	- in order to ensure precision of intent, interfaces that have default 
+	implementations of methods must be explicitly exported by the composing 	system if it is to be used
+
+	- the implementation of an interface attribute may be done in one of 
+	three ways by the composing system:
+		1.  Declare a public attribute of a matching signature/type
+		in the system, reimplementing it.  This is consistent with most
+		existing interface patterns in other languages.
+		2.  Declare a public attribute of the interface in question, eg:
+			`public IEncoding`
+		    This indicates that _all_ of the public, default 
+		    implementations of the interface are to be exported as-is
+		    and allows for quick composition of known, complete modules.
+		3.  Declare a public attribute of the interface attribute in
+		    question, eg:
+			`public IEncryption.encrypt`
+		    This indicates that the default implementation of the
+		    interface is to be used as the public implementation from
+                    the enclosing system.
+	
+	- any interfaces or attributes with default implementations not 
+	explicitly exported are isolated from use outside the composing system
+
+	- the enclosing system may invoke `public` interface attributes
+	explicitly using the interface notation described above, allowing
+	for a custom composing implementation of a method to invoke the
+	interface default implementation, if desired.
+
+	- an interface with one or more custom initializers that are not
+	the default initializer, (eg. init()), must be non-public and _must_
+	be invoked by the composing system during its own initialization.
+
+	- an interface with no implementation (`interface XXX {}` ) is 
+	described as the 'any interface' and is automatically composed by every
+	system in the deployment.  This is type-equivalent to the intrinssic
+	data type `any`.
+
+
+Deployment:
+
+	- to 'deploy' is to (a) compile all source files without error,
+	(b) while preserving the constraints established in the basis, (c)
+	saving a historical record of the combination of code and configuration,
+	and (d) instantiating the main system
+
+	- an instantiated deployment retains all the history, analytics and
+	persistent data of all of its instantiated subsystems until it is
+	discarded
+
+	- when execution reaches the last line of a deployment's main 
+	system, it will be moved to PAUSED and may not be moved back again
+	to RUNNING but retaining all of its state until it is explicitly
+	discarded and reinstantiated
+
+	- when a system is no longer used by at least one other system, and its
+	 immediate and method processing has completed has its resources
+	discarded, its persistent resources are retained as long as its 
+	deployment exists, and its instance is discarded, no longer instantiated
+		- the main system also requires operator intervention before
+		deinitiation occurs.
+
+Access Control
+	- by default, the access (control) of declared attributes (systems, 
+	variables, functions) is private to the system in which they are
+	declared, meaning that parent systems may not integrate them.
+
+	- child subsytems may access all attributes and properties of parent 
+	systems without restriction, but are bound by public access semantics
+	when working across family lines when referenced from a common patriarch
+
+	- all codepaths within a deployment may access the main declarations 
+	of the deployment with or without the 'public' keyword.  This is a 
+	natural outcome of the rules for subsystem property access of parent 
+	systems described above
+
+	- systems defined by folders always have their name exported implicitly
+	as 'public' with all attributes following the default 'private' 
+	conventions.
+
+	- in order to allow access to a declaration from outside its system,
+	it may be prefixed with the 'public' keyword.  Optionally, systems may
+	use the 'public:' grouped access specifier on a blank line to indicate 
+	that everything from it to the bottom of the system or source file, 
+	whichever comes first, is public.
+
+	- referencing declarations requires that every declaration between
+	the usage and the declaration follow a chain of public access, otherwise
+	the integration is disallowed.   Consider three systems, A, B, and C 
+	where A declares B, and B declares C.  If C is 'public' and its function
+	C.f1() is 'public', but B is not declared as public, then A *may not*
+	access C.f1().
+
+
+Variables
+	- by default, all variables are used _by value_ meaning that any 
+	reassignment creates an exact copy of the original that is independent
+	from its origin
+
+	- a variable type may be prefixed with an `&` token to indicate it is a
+	reference to a value in which case any modification to that variable 
+	modifies the value to which it refers.
+		- syntax: `var age: &int = 5`
+		- syntax: `var name = &"sheila"
+		- syntax: `var cs: &bool = &connStatus`
+
+	- reference declarations *must* be preserved during assignment to new
+	variables or parameters.  
+
+	- a reference instance may be converted into a value using the 
+	system interface method `.clone()`.  Executing `.clone()` on a 
+	standard value is equivalent to simple assignment.
+		- it is likely there is a IRef interface or similar that
+		expresses this capability
+		- TODO: maybe the better way is the '!' operator to 
+		dereference or to guarantee non-null: 'the value operator'.
+		UPDATE: this could get funny with a reference to an optional.
+
+	- a variable may be delared with the keyword `const` instead of `var`
+	to indicate it is readonly (a constant), in which case its value is
+	assigned once and may not be changed.
+	
+
+Runtime:
+	- all processing is performed by a collection of one or more cores
+	in the deployment
+
+		- each kernel supplies one core with integrations into its
+		own basis
+
+		- cores are allocated by/to each connected client and 
+		integrated into the core internetwork with an understood
+		collection of integrations and populated with connectivity 
+		into the network by the core that created them.  that is,
+		a kernel can create a client core, but must provide it with
+		the means of running system interactions.
+
+		- a deployment must have at least one core RUNNING, otherwise 
+		it is PAUSED.
+	
+		- !!! because each core is 'non-uniform' it supplies an 
+		_unequal_ number of integrations and resources, which means
+		the deployment must be able to account for these differences
+		in the routing between cores.
+
+		- the initialization of a kernel automatically assigns
+		default local resources to it, providing basic disk access,
+		CPU and networking.
+
+Data and Types:
+	- intrinsic types are hierarchical in precision allowing for code
+	to be built from generic to specific and systems to automatically 
+	adapt accordingly (see 8/7)
+
+	- the act of declaring a variable globally or statically implies
+	operational persistence.  
+		- a system repo is just another system
+		- a global variable is transient in the system deployment
+		- a static global is persistent in the system deployment
+
+	- there are primitive types for array, hash.  
+
+	- when initializing an array a newline (or equialvent) may be
+	substituted for a comma
+
+	- there is a 'time' fundamental type that is a unique date/time 
+	timestamp (with as much resolution as is required)
+
+	- references to types must be explicit (ie. '&'), otherwise everything
+	is passed by value
+
+Functions:
+	- declared with 'func' keyword
+
+	- functions are themselves structures with fundamental methods that
+	can be used to control behavior.
+
+	- functions are declared 'func XXXX(aaa: string) -> bbb'
+
+Structures:
+	- everything is a structure, even the primitives, and structures
+	can have methods that operate on a closed context of only what is
+	in that structure
+
+Concurrency:
+	- functions always behave synchronously to callers
+
+	- data accesses of attributes within a system are always transactional
+	within one of its functions
+		- a transaction is started when a function (or preinit)
+		accesses a system property and completed when the scope is 
+		exited
+
+Built-in:
+	- ??pause() or pause(fn()) to intentionally pause the system at the
+	point it is executed, possibly by criteria to create programmatic
+	breakpoints.

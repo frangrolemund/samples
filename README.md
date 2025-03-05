@@ -22,3 +22,10 @@ App for delivering secure chat over Twitter using steganography, built in the
 iOS4-7 timeframe.  It was published and in the App Store for a brief period and
 worked successfully with Twitter back then. 
 
+
+## [unum](./unum)
+
+Some conceptual work (code not included) for a more recent project to build a
+platform for 'systemic programming' which aims to address the problem of 
+linkage in distributed web service architectures.
+

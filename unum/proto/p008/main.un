@@ -1,0 +1,36 @@
+// ****************************************************
+// Variant-1: Simple execution as immediate processing
+// - print to the deployment log
+// - deployment lifecycle, RUNNING to PAUSED
+// ****************************************************
+
+// - every deployment is itself an unnamed system with an implicit scope
+//   around all of the files in its root folder
+// - system processing is inherently independent from one another and will
+//   always operate _concurrently_ within the deployment
+// - all of the code in a system outside of function declarations is
+//   described as 'immediate processing', referring to its behavior to execute
+//   right after initialization of static/instance properties and optional
+//   init() instance invocation
+// - system methods may not be executed externally until immedate processing
+//   completes
+
+// ... emit text to the deployment log, which persistently saves structured
+//     event history for the active deployment, erased after each restart
+unum.log.print("Hello World")
+
+// *************************
+// - upon reaching this point, the deployment is PAUSED because it completed
+
+// - a deployment in a PAUSED state retains all of its operating data for
+//   examination through the interface to the basis (CLI)
+
+// - there is no concept of a deployment being EXITED in unum because a system
+//   that does not exist is simply discarded along with its resources.  The
+//   deployment is never auto-discarded because it may have important persisted
+//   data that would be lost if it were.  Furthermore there's not a clear
+//   notion of what it would mean to _exit_ a distributed system made up of one
+//   server and three clients.  Would it mean all four exit their related
+//   processes, or just the server?
+
+// - a restart discards any transient data (deployment log) and resources 
