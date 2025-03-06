@@ -18,8 +18,7 @@ informational purposes.  No license is provided or implied by their publication.
 
 App for delivering secure chat over Twitter using steganography, built in the 
 iOS4-7 timeframe.  It was published and in the App Store for a brief period and
-worked successfully with Twitter feeds as a transport protocol, which was a
-pretty cool to see work.
+worked successfully with Twitter feeds as a transport protocol, which was cool.
 
 
 ## [MetStudy](./metstudy)
@@ -34,11 +33,13 @@ to curate MetArt content and an mobile 'player' to consume it.
 These are a couple evolutions of work I've done to explore ways to address some
 of the costs of distributed software.
 
+
 ### [Rspec](./Rspec)
 **Language**: `Swift/SwiftUI`
 
 A macOS concept to diagram distributed systems with the ease of using a 
 spreadsheet, while allowing them to be redeployed later.  
+
 
 ### [unum](./unum)
 **Language**: `n/a`
