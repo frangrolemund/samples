@@ -21,6 +21,13 @@ worked successfully with Twitter feeds as a transport protocol, which was a
 pretty cool to see work.
 
 
+## [MetStudy](./metstudy)
+**Language**: Swift/SwiftUI
+Mobile app concept to experiment with SwiftUI mobile design patterns using a 
+public data set.  The idea is for it to be a combination of a macOS 'designer'
+to curate MetArt content and an mobile 'player' to consume it.
+
+
 ## The Distributed Problem
 These are a couple evolutions of work I've done to explore ways to address some
 of the costs of distributed software.
@@ -35,10 +42,3 @@ spreadsheet, while allowing them to be redeployed later.
 Some conceptual work (code not included) for a more recent project to build a
 platform for 'systemic programming' which aims to eliminate the costs of linkage
 in distributed service architectures.
-
-
-## [MetStudy](./metstudy)
-**Language**: Swift/SwiftUI
-Mobile app concept to experiment with SwiftUI mobile design patterns using a 
-public data set.  The idea is for it to be a combination of a macOS 'designer'
-to curate MetArt content and an mobile 'player' to consume it.
