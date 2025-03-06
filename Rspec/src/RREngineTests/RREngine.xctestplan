@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "F1EA469A-8EC7-4490-B7E1-EFB74A8A6B1C",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Realrouted.xcodeproj",
+        "identifier" : "A1A3DEEC2A5D86AC000C4390",
+        "name" : "RREngineTests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "F59CC224-0827-4D7F-BD4C-02CCE064AA4D",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:RRouted.xcodeproj",
+      "identifier" : "A13036482A56E73B00694A26",
+      "name" : "RRouted"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:RRouted.xcodeproj",
+        "identifier" : "A1A3DEEC2A5D86AC000C4390",
+        "name" : "RREngineTests"
+      }
+    }
+  ],
+  "version" : 1
+}
