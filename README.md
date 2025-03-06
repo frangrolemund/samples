@@ -23,7 +23,7 @@ pretty cool to see work.
 
 
 ## [MetStudy](./metstudy)
-**Language**: Swift/SwiftUI
+**Language**: `Swift/SwiftUI`
 
 Mobile app concept to experiment with SwiftUI mobile design patterns using a 
 public data set.  The idea is for it to be a combination of a macOS 'designer'
@@ -35,7 +35,7 @@ These are a couple evolutions of work I've done to explore ways to address some
 of the costs of distributed software.
 
 ### [Rspec](./Rspec)
-**Language**: Swift/SwiftUI
+**Language**: `Swift/SwiftUI`
 
 A macOS concept to diagram distributed systems with the ease of using a 
 spreadsheet, while allowing them to be redeployed later.  
