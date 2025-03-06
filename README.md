@@ -18,7 +18,7 @@ informational purposes.  No license is provided or implied by their publication.
 
 App for delivering secure chat over Twitter using steganography, built in the 
 iOS4-7 timeframe.  It was published and in the App Store for a brief period and
-worked successfully with Twitter feeds as a transport protocol, which was cool.
+worked successfully with Twitter feeds as a transport protocol.
 
 
 ## [MetStudy](./metstudy)
