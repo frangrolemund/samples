@@ -1,0 +1,155 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "A fundamental asumption could not be satisfied." : {
+      "comment" : "An internal failure occurred that was unexpected and is most certainly a bug.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фундаментальне припущення не могло бути задоволене."
+          }
+        }
+      }
+    },
+    "A network request for an online data has failed." : {
+
+    },
+    "A.D." : {
+
+    },
+    "B.C." : {
+
+    },
+    "One or more provided arguments are invalid." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Один або кілька наданих аргументів недійсні."
+          }
+        }
+      }
+    },
+    "The file could not be accessed at the provided location." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо отримати доступ до файлу у вказаному місці."
+          }
+        }
+      }
+    },
+    "The file could not be opened or is invalid." : {
+      "comment" : "A failure occurred attempting to open an on-disk file.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Файл не вдалося відкрити або він недійсний."
+          }
+        }
+      }
+    },
+    "The file data is invalid or unexpected." : {
+      "comment" : "The format of a file being imported into the data model is incorrect.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дані файлу недійсні або неочікувані."
+          }
+        }
+      }
+    },
+    "The HTTP request has failed.%@" : {
+
+    },
+    "The object index has no content." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Індекс об’єкта не має вмісту."
+          }
+        }
+      }
+    },
+    "The object index is missing a header row." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В індексі об’єкта відсутній рядок заголовка."
+          }
+        }
+      }
+    },
+    "The operation was cancelled." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Операцію скасували."
+          }
+        }
+      }
+    },
+    "The provided context does not match the current index." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наданий контекст не відповідає поточному індексу."
+          }
+        }
+      }
+    },
+    "The requested entity was not found." : {
+
+    },
+    "The source data is not valid UTF-8." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вихідні дані недійсні UTF-8."
+          }
+        }
+      }
+    },
+    "The system reported libC errno of %d." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Система повідомила про помилку libC %d."
+          }
+        }
+      }
+    },
+    "There is an unexpected bug in the data modeling API." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Виникла неочікувана помилка в API моделювання даних."
+          }
+        }
+      }
+    },
+    "Unable to read or write the associated file" : {
+      "comment" : "A failure occurred while interacting with an open on-disk file.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо прочитати або записати пов'язаний файл"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

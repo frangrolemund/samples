@@ -27,8 +27,8 @@ of the costs of distributed software.
 
 ### [Rspec](./Rspec)
 **Language**: Swift/SwiftUI
-The idea here was to be able to diagram a distributed system with the ease of
-using a spreadsheet, while allowing it to be redeployed later.  
+A macOS concept to diagram distributed systems with the ease of using a 
+spreadsheet, while allowing them to be redeployed later.  
 
 ### [unum](./unum)
 **Language**: `n/a`
@@ -36,3 +36,9 @@ Some conceptual work (code not included) for a more recent project to build a
 platform for 'systemic programming' which aims to eliminate the costs of linkage
 in distributed service architectures.
 
+
+## [MetStudy](./metstudy)
+**Language**: Swift/SwiftUI
+Mobile app concept to experiment with SwiftUI mobile design patterns using a 
+public data set.  The idea is for it to be a combination of a macOS 'designer'
+to curate MetArt content and an mobile 'player' to consume it.

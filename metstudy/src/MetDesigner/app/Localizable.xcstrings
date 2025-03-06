@@ -1,0 +1,489 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    " - %@" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " - %@"
+          }
+        }
+      }
+    },
+    "**MetDesigner** requires the [Metropolitan Museum of Art Open Access CSV](https://github.com/metmuseum/openaccess) as a reference in this document for the museum's public exhibits." : {
+      "comment" : "Descriptive markdown describing the external data required by the document.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**MetDesigner** вимагає [CSV відкритого доступу Музею мистецтв Метрополітен](https://github.com/metmuseum/openaccess) як посилання в цьому документі для публічних експонатів музею."
+          }
+        }
+      }
+    },
+    "%@:" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@:"
+          }
+        }
+      }
+    },
+    "Accession Number" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Номер доступу"
+          }
+        }
+      }
+    },
+    "Acquired" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquired"
+          }
+        }
+      }
+    },
+    "ALL keywords" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "УСІ ключові слова"
+          }
+        }
+      }
+    },
+    "Any keyword" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Будь-яке ключове слово"
+          }
+        }
+      }
+    },
+    "Artist" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Художник"
+          }
+        }
+      }
+    },
+    "Artist Bio" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Біографія художника"
+          }
+        }
+      }
+    },
+    "Calculating..." : {
+      "comment" : "Status text displayed when the index file is being procssed to determine file size.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розрахунок..."
+          }
+        }
+      }
+    },
+    "Created" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Створено"
+          }
+        }
+      }
+    },
+    "Culture" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Культура"
+          }
+        }
+      }
+    },
+    "Department" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "відділ"
+          }
+        }
+      }
+    },
+    "Exhibit" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Експонат"
+          }
+        }
+      }
+    },
+    "Exhibit Reference" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Довідка про експонат"
+          }
+        }
+      }
+    },
+    "Export" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Експорт"
+          }
+        }
+      }
+    },
+    "Highlighted" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Виділено"
+          }
+        }
+      }
+    },
+    "Import MetArt Exhibits" : {
+      "comment" : "Title of initial state in document directing the user to import dependent data.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Імпорт експонатів MetArt"
+          }
+        }
+      }
+    },
+    "Importing..." : {
+      "comment" : "Status text displayed when the index file is being parsed and imported.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Імпорт..."
+          }
+        }
+      }
+    },
+    "Matching:" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "відповідність:"
+          }
+        }
+      }
+    },
+    "Medium" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Середній"
+          }
+        }
+      }
+    },
+    "MetDesigner Failure" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помилка MetDesigner"
+          }
+        }
+      }
+    },
+    "MetDesigner is a brand new experience." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MetDesigner – це абсолютно новий досвід."
+          }
+        }
+      }
+    },
+    "n/a" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n/a"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ім'я"
+          }
+        }
+      }
+    },
+    "Navigator" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навігатор"
+          }
+        }
+      }
+    },
+    "NO" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "НІ"
+          }
+        }
+      }
+    },
+    "No data found." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Даних не знайдено."
+          }
+        }
+      }
+    },
+    "No exhibits found." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Експонатів не знайдено."
+          }
+        }
+      }
+    },
+    "ObjectID" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ObjectID"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "в порядку"
+          }
+        }
+      }
+    },
+    "Optimizing..." : {
+      "comment" : "Status text displayed when the index file is being optimized after processing.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оптимізація..."
+          }
+        }
+      }
+    },
+    "Public Domain" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Публічний домен"
+          }
+        }
+      }
+    },
+    "Reference Item" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Довідковий елемент"
+          }
+        }
+      }
+    },
+    "Reset Filter" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скинути фільтр"
+          }
+        }
+      }
+    },
+    "Search for exhibits.." : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пошук експонатів.."
+          }
+        }
+      }
+    },
+    "search.bar.exhibits.%lld" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld exhibit"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld exhibits"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld експонати"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld експонат"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld експонатів"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Tags" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Теги"
+          }
+        }
+      }
+    },
+    "Tap upon or drag the `MetObjects.csv` file onto the button below to get started." : {
+      "comment" : "Descriptive markdown directing the user how to begin importing data.",
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Торкніться або перетягніть файл `MetObjects.csv` на кнопку нижче, щоб розпочати."
+          }
+        }
+      }
+    },
+    "Timeline Work" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Графік роботи"
+          }
+        }
+      }
+    },
+    "Title" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Назва"
+          }
+        }
+      }
+    },
+    "Tour Designer" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тур дизайнер"
+          }
+        }
+      }
+    },
+    "Year Created:" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рік створення:"
+          }
+        }
+      }
+    },
+    "YES" : {
+      "localizations" : {
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ТАК"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

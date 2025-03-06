@@ -1,0 +1,61 @@
+MetDesigner v1.0
+Design Document
+------------------
+
+Objective:  
+	To use the MetObjects dataset to produce a single optimized tour
+        definition that can be used by a 'player' app.
+
+Problems:
+	- MetObjects is a huge file
+	- MetObjects is incomplete wrt the online API content
+
+Overall:
+	A document-based macOS app that requires importing a MetObjects file
+	before the tours can be defined.  
+
+	A master-detail organization with the master acting as some sort
+	of navigator for the tours and plans (combinations of tours) and the 
+	detail operating as a design editor for a single tour.
+
+	A tour is a self-contained sequence of exhibits that can be played
+	much like a movie.  It an optimized list of small resources for 
+	previous purposes with the expectation that additional data can be
+	downloaded at runtime, but is not strictly required.
+
+	Eventually, tours can be multi-selected and built into a tour plan.
+
+Vocabulary:
+	object:		A single entity from the MetObjects index that has
+			not been queried from the web.
+	exhibit: 	A single entity from the Met Art index + web source
+	tour: 		A curated sequence of Met Art exhibits with associated 
+			resources and commentary that can be used to 
+			delightfully experience the history of those items.
+	plan:		A curated group of one or more tours.
+
+Ideas:
+	- The Navigator shows a list of tours with an addition button next to
+	them and a 'Default' tour when the document is created.  It will show
+	exhibits under the tour in a list.  The tour can be selected or the
+	exhibits selected, but one of the two is always selected.  Selecting
+	an exhibit implies the tour.
+
+	- Selecting the row in the master/navigator changes the detail
+
+	- The detail is composed of two columns: editor and property inspector
+
+	- The editor is a column that has the index at the top always with 
+	a search bar for finding things.  The user can select items in the 
+	index and drop them into the tour.  When the document is first created
+	the index is empty and has a button to load the index objects.  Below
+	the index is the tour editor which shows a sequence of exhibits.
+
+	- The index displays the objects, but by selecting one it displays
+	the properties of the baseline exhibit in the property inspector.  The
+	user can drag an item from the index into the navigator or into the
+	tour.
+
+	- When a tour is created, it can be exported by right-clicking on it.
+
+	

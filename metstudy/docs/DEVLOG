@@ -1,0 +1,4236 @@
+Study of Met Art
+Started: 01/03/24
+*****************
+
+Wednesday, January 3, 2024
+--------------------------
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Over the last few days I've been thinking of starting a new project that is
+small in scope, but can showcase skills in modern iOS for my personal
+portfolio.  I'm exploring the possibility of an app that uses the public 
+data set of the Met Art museum in NY paired with the best features of the
+iPhone and its frameworks to develop a uniquely immersive experience.
+....
+TODO:
+	- look at the data APIs and create a rough set of ideas about what
+	an app like this might include and how it would be organized.
+....
+Some ideas I had:
+- show a login experience that is local-only, but allows the user to create
+an identity that tracks their progress.
+- provide beautiful edge-to-edge displays of these items with fades and
+delightful animations
+- allow people to rate and maybe even comment on art that is shared with
+public iCloud (CloudKit) features.
+- auto-generate daily 'tours' maybe that pass through different types of
+exhibits.
+- connect these exhibits with Wikipedia (maybe) to search for more information
+- generate a popularity index that is shared between devices to create a feed
+maybe.
+
+For this to be most useful to my employment, I need to minimally incorporate:
+- dynamic access to the most recent online data
+- SwiftUI
+- Swift Concurrency
+- Combine
+
+But, ideally some of the following:
+- SwiftData
+- background updates 
+- push notifications
+- sharing and integration with other services
+- machine learning maybe with Apple ML tech?
+....
+I'll begin it tomorrow.
+
+
+Tuesday, January 9, 2024
+--------------------------
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+It has been a shitshow around here the last week when Dennis injured his back
+while I had multiple doctor's appointments.  I've had almost no time to think 
+about this.  I'm telling myself that I need to try to do something though so
+maybe today I'll start planning.
+....
+TODO:
+	- look at the data APIs and create a rough set of ideas about what
+	an app like this might include and how it would be organized.
+....
+They want clients to limit to 80 requests per second, which is very reasonable.
+
+Just the indexing for this when downloaded from their openaccess Git repo is
+303MB.  Any thought I had of embedding it into the app would be infeasible.
+...
+A single object request takes 300ms and in one case returns 2.5KB of data.
+...
+A single department (photography) has 37K object ids returned.  I suppose some
+are less and some are more.   There are nearly a half a million items provided
+on this site.
+...
+The search is reasonably fast, but only returns object ids based on known
+queries.
+
+	...oh and object-ids are just numbers, nothing globally-unique.  Do
+	they always exist? or are they renumbered at some point?  
+
+	...it looks like these represent all the acquired items in the musuam,
+	(not sure how that relates to those that may be 'on load', but ok).  I
+	can probably assume that the object ids are monotonically increasing.
+...
+The 'Get Objects' API is very heavy without any means of tuning it 
+significantly.  If you just call it without a department, you get back ~3.6MB
+of data and no idea what the object ids refer to because it only returns them
+and not even associated departments.
+...
+The lack of associative information is a challenge.  I can get departments and
+then objects in the department, just by id, but no clue about what the ids
+refer to.  I found that the search _requires_ a query string.  Sadly, the
+other eearch criteria allow me to narrow into departments, available media, etc.
+but without search text it gives me an odd, limited result.
+....
+IDEA:
+I can probably work with this, especially since it is about constraints and
+design more than anything.  I could focus on the idea of a tour that occurs
+daily so that the app can curate it, possibly the day before.   The idea is
+that the app starts by requesting the departments, then pulling the object ids
+for that department, then picking a random set of objects, maybe 100 for that
+department, and then crafting a sequence that highlights them.
+
+What I don't like about that is the lack of continuity.  It is sort of
+auto-adapting, but not terribly inspiring, which is what this needs to be.
+....
+IDEA-2:
+So maybe the tours could be curated by a system that reads-in that CSV file
+(that 300MB thing) and generates lists of exibits that can be presented each
+day.  I could figure out the relationships and possibly favor specific 
+tag types or similar.  Then if I published it, possibly to iCloud publicly
+or I guess I could just embed them in-app even, that would allow me to present
+much better tours.  I could always offer a search experience later if they
+want to explore themselves.
+....
+I'll try again tomorrow.
+
+
+Wednesday, January 10, 2024
+--------------------------
+NAME: MetTours?
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Some design ideas are starting to form.  I'm toying with the idea of curating
+tours and publishing them either with the app or in iCloud (maybe even both?).
+I'm going to investigate this big CSV and see what it has available.
+....
+TODO:
+	- COMPLETE: look at the data APIs and create a rough set of ideas about
+	what an app like this might include and how it would be organized.
+	- COMPLETE: Does public iCloud data need an account?  UPDATE: 
+	No if you're reading, but you must be signed-in to write.
+		- COMPLETE: watch: https://developer.apple.com/videos/play/wwdc2020/10650/#:~:text=Accounts%20are%20optional.,the%20public%20and%20private%20database.
+....
+I downloaded the CSV and it lines up with the API, but has some inconsistencies.
+The department names aren't ncessarily the same with what is in that file.  The
+file also doesn't record anything about the images.
+
+That means there is probably a combination of this file for reference and the
+APIs to get a feel for whether it should be used.
+
+I'm generally leaning towards something like this:
+
+	Tour Designer > (iCloud or embedded) Met Tours
+
+The designer would take this CSV file combined with the online APIs and build
+a data set that includes content would be played in the app itself.  The
+principle is that this is a sequence of curated data.
+...
+Checkpoint:
+The reason I'm leaning towards this design is due to the limitations of the 
+APIs for searching and association.  The department API is not terribly useful
+unless I intended to brute-force my way from department >> objects >> object, 
+which wouldn't work in practice for mobile apps.  Either I offer a 'search-only'
+mobile app, which still requires heavyweight queries for each sub-item, or
+I preprocess the data somehow to know what is best to retrieve.
+
+Therefore, since they provide a CSV with _some_ of this data, if I can process
+it and generate a more useful starting index, then the object queries are
+more relevant.
+....
+So it does look like in theory I could use CloudKit publicly for this data,
+including even Core Data for organizing it with some specialization, but it's
+quite complex to set up and coordinate, requiring a significant understanding
+of both Core Data and CloudKit to be successful.
+...
+Maybe the right first step is to use embedded tours, even just _one single
+tour_.  Then I could expand from there.  
+
+DESIGN:
+Ok, I think that's the plan.  Start the designer, which saves 'Tour' objects
+that include all the data and probably even the same shots for the tour for
+branding, etc.  Then create an app that can play this tour while pulling data
+from the net for the references.  I need to figure out V1 next, which won't
+happen tomorrow as I have a dentist appointment.  I'll try to capture some
+notes about what I minimally need for thE MVP.
+
+Also, I think I need to work out how this will factor-into my portfolio.  I'm
+leaning towards having a dedicated repo for it, but I'm not sure if I want 
+every commit to show up there.  I'll think on that more.
+
+Good day.
+
+
+Friday, January 12, 2024
+--------------------------
+NAME: MetTours?
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Not sure I like MetTours.  The double-Ts are annoying.  Maybe MeTours or 
+METours?  Could even be MetArt Tours.
+....
+TODO:
+	- name for framework
+	- stubs
+		- designer as macOS app
+		- framework for macOS/iOS (name?)
+		- tours macOS, iPadOS, iOS
+	- framework
+		- objects fields
+		- objects APIa (probably classes per object)
+	- COMPLETE: Designer
+		- COMPLETE: Scope for MetDesigner
+		- COMPLETE: Initial design for designer.
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+The MetDesigner app is the first thing to figure out.  Generally:
+* document-based app that maintains a document of supporting details and tour
+designs
+* requires imported MetObjects.CSV to work
+	* identify columns that are required
+	* identify filter criteria for omitting data
+* MetObjects is only used for design and its data is re-purposed
+* Object pallette with search capability
+* Drag and drop interface for tour
+* Editable tour details
+* exports tour plans with associated resources
+	* feels like there is a common framework between the designer and the
+	tours app
+....
+My plan is to work here I think and then build an official portfolio repo later
+that I can carefully manage the commit dates and content inclusion for.  I'm
+not going to include this DEVLOG and want to not show every commit in it.
+
+I do think that this requires 3 different types of binaries:
+1.  A framework for interfacing with MetArt and includes the model for the
+Objects, Tours and Plans even if the Objects won't be used in the app.
+2.  A designer app that can load the objects and provide editing features for
+building a perfect tour.
+3.  A player app that takes tour plans and displays them with beautiful 
+accompaning details.
+....
+Ok, so I think the first step is to get some stubs of the framework and
+the designer in here before continuing with the framework with some focus.
+...
+That's it for today.  I'll take it up again tomorrow and begin writing code.
+
+Good day.
+
+
+Saturday, January 13, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to work on the stub projects today.
+....
+TODO:
+	- COMPLETE: name for framework
+	- COMPLETE: stubs
+		- COMPLETE: designer as macOS app
+		- COMPLETE: framework for macOS/iOS (name?)
+		- COMPLETE: tours macOS, iPadOS, iOS
+	- framework
+		- objects fields
+		- objects APIa (probably classes per object)
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I'm going to try 'MetMinded' for the app.  It sort of rolls of the tongue, makes
+the Met front and center and there's nothing else to compete with it.
+....
+I didn't get as much done today as I'd like, but I have a start.  Tomorrow I'll
+start picking through the data set and see what I want to pull from it while
+thinking about the API for the framework.
+
+
+Sunday, January 14, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Other commitments demanded my time today, so I didn't get to hack on this like
+I'd intended.  I'm starting later and will try to accomplish something though.
+....
+TODO:
+	- framework
+		- COMPLETE: objects fields
+		- ObjectIndex Interface
+			- Codable, top-level class, with objectref items that
+			are simple structs that give superficial indexed data
+			- Load from CSV file using specific columns.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> object
+				- object is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- object >> tour
+			- plan entity
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I think the list of fields from the object export is a good start.
+
+I'm leaning towards:
+* 'Object Number' (string)
+* 'Is Highlight' (boolean)
+* 'Is Tmeline Work' (boolean)
+* 'Is Public Domain' (boolean)  	NOTE: filter out 'false'
+* 'Object ID' (number)
+* 'Department' (string)
+* 'AccessionYear' (optional number)
+* 'Object Name' (optional string)	NOTE: must be non-empty or 'Title'
+* 'Title' (optional string) 		NOTE: must be non-empty or 'Object Name'
+* 'Culture' (optional string)
+* 'Artist Display Name' (optional string)
+* 'Artist Display Bio' (optional string)
+* 'Object Begin Date' (integer)
+* 'Object End Date' (integer)
+* 'Medium' (string)
+* 'Link Resource' (string)
+* 'Tags' (array of strings, possibly empty)
+....
+I'm thinking that only displaying public domain works may be the best option.
+It cuts the working set into half and hopefully mitigates any licensing
+concerns.  It is concievable that an item coud be mislabeled, but I'll not
+worry about that.  This suggests that there is a special filter that is applied
+to the original data set that omits content in the adapted result set.  Not
+sure yet if I'll omit during import or not, probably makes sense considering
+how fucking big that file is.
+...
+The data file is only superficially useful.  It feels like it is possibly
+best used for narrowing down items of interest using some form of query to
+filter the affected items and generate object ids.
+
+Then the object ids need to be queried for object records, which include
+the photos.  Items without photos don't have a use for this work.
+
+I'll cache the object records and the photos to minimize back-end commitments.
+....
+The first thing to build is the object index.  That will have this superficial
+data, but as long as it can be quickly searched, then I can possibly pull the
+supporting information.
+
+I'll stop there for today.
+
+
+Monday, January 15, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I think I have an opinion on how to do this work now.  I'd been considering
+that I should build a porfolio repo in my account and track commits that way,
+but didn't want to divulge the history and timing, or probably even my DEVLOG
+either.  So the way this will work, is my personal GitHub account will have
+a portfolio, which I'll update periodically with mods from here.  I still
+want to keep all my code officially in the Realproven space just to ensure 
+consistency of backup, etc. but I'll transfer work after milestones to the 
+other area to develop a commit history there.  This will still be the 
+official store of record for all this effort.
+....
+TODO:
+	- framework
+		- ObjectIndex Interface
+			- Codable, top-level class, with objectref items that
+			are simple structs that give superficial indexed data
+			- Load from CSV file using specific columns.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> object
+				- object is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- object >> tour
+			- plan entity
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+Dennis is still not well so I'm not going to try to do much today.  I know
+how my repo work is going to play out I guess, which is something.  
+
+
+Wednesday, January 17, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to write some code today, by damn.
+....
+TODO:
+	- framework
+		- MMObjectIndex Interface
+			- File access in Swift
+			- Codable, top-level class, with objectref items that
+			are simple structs that give superficial indexed data
+			- Load from CSV file using specific columns.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- test for index parsing using existing data.
+			- access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> object
+				- object is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- object >> tour
+			- plan entity
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I learned that SwiftUI has a modifier for views called '.fileImporter' which
+will open up a file dialog for locating files.  That works perfectly for this
+task.
+...
+I found an immediate weirdness to the input data - the first column has prefix
+bytes in its string.  I wonder if this is a Unicode marker that I'm seeing.  
+I'll have to continue with this tomorrow.  I'm getting back into it slowly.
+
+
+
+Thursday, January 18, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I have an idea or two to get past this problem with the first item.
+....
+TODO:
+	- framework
+		- MMObjectIndex Interface
+			- File access in Swift
+			- Codable, top-level class, with objectref items that
+			are simple structs that give superficial indexed data
+			- Load from CSV file using specific columns.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- test for index parsing using existing data.
+			- access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> object
+				- object is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- object >> tour
+			- plan entity
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I wonder if control characters are part of a CharacterSet that I can use to
+trim that item.
+...
+Creating a test is definitely the right way to do this to improve my speed
+of iteration.
+...
+I need to sanitize this data a bit more, they use quotes to designate when to
+include a bunch of text in a column, which I assume is a standard CSV 
+convention.  In any case, I'll get that fixed tomorrow.
+
+Good day.
+
+
+
+Tuesday, January 23, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Tied up with work and home.  Back to it today.
+....
+TODO:
+	- framework
+		- MMObjectIndex Interface
+			- COMPLETE: File access in Swift
+			- COMPLETE: Codable, top-level class, with objectref 
+			items that are simple structs that give superficial 
+			indexed data
+			- COMPLETE: Load from CSV file using specific columns.
+			- COMPLETE: add iterator support.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- test for index parsing using existing data.
+			- access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> object
+				- object is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- object >> tour
+			- plan entity
+		- file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+Well, I got a bit more parsed today.  There's some remaining testing to verify
+that I got all the items, but it isn't bad.  I feel like I should shift over to
+the designer as soon as possible to get a feel for what I'm trying to deliver
+there.  The designer experience is rather important. 
+
+Good day.
+
+
+
+Wednesday, January 24, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+....
+TODO:
+	- framework
+		- MMObjectIndex Interface
+			- COMPLETE: bug: escape sequences need to support 
+			embedded newlines
+			- bug: fileimporter stopped working.
+			- embedded lists for common items list 'department' or
+			'tags'
+			- COMPLETE: test for index parsing using existing data.
+			- COMPLETE: access APIs to get ref by object id, number,
+			- access APIs to filter the index based on specific
+			criteria.  filter is saved with index.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+		- COMPLETE: file reading in Swift
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I wasn't happy with the terminology of the artifacts in my model and did a
+quick search online for museum tours this morning and noticed the word 'exhibit'
+which is perfect.  That's exactly what I was looking for.
+...
+I just found an example in the dataset where one of the fucking columns extends
+over multiple lines with embedded newlines in it.  Goddamn.  I'm going to have
+to rework how I read lines.
+...
+The solution for this is to specify how many columns to read and cache whatever
+can't be used. 
+....
+I have a fix for that bug.  I'm just going to keep trying to read this data
+until I can get this giant index read.
+...
+I just ran into a problem where the .fileImporter modifier won't let me select
+any files.  The only thing I did was abort the run of a processing of the
+index file once, but for whatever reason now I can't open files.  I'll work on
+that tomorrow.
+
+Good day.
+
+
+
+Thursday, January 25, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+....
+TODO:
+	- framework
+		- COMPLETE: MMObjectIndex Interface v1
+			- REJECTED: bug: fileimporter stopped working.  UPDATE:
+			I was being stupid.  The file dialog I was seeing was
+			for the new/open document.
+			- DEFERRED: embedded lists for common items list 
+			'department' or 'tags'
+			- DEFERRED: access APIs to filter the index based on 
+			specific criteria.  filter is saved with index.
+			- COMPLETE: Read entire file successfully
+			- COMPLETE: Add a storage class to the app so I can 
+			see the memory usage when it is loaded.
+			- COMPLETE: How much is the index as JSON-encoded data?
+		- Designer-v1:
+			- COMPLETE: general form of the app
+			- Skeleton as navigator, editor and inspector.  Use the
+			DocProto from the RRPrototypes as a reference.
+			- document as class with filewrapper and proper ext
+			- move document propation back as an environment object
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+Oh yeah.  That bug with file import.  WTF.
+...
+I need to think about the designer experience before I continue with the 
+indexing in specific ways.  However, all that is after I figure out how to
+read the entire file.
+
+It looks like I can read this at 14.5K records per second.  Not great, tbh.
+It takes about 30 seconds to read that file's 500K records.
+....
+The process balloons up to >1GB and then settles on 700MB once the read is done.
+I was profiling and found that it dropped again to about 200MB after some
+period of time.  Not sure if I'm seeing a garbage collection even, but it isn't
+clear what triggered it.  THe app running in the debugger doesn't release
+that memory.  It could be that in debug mode the garbage collector isn't
+as aggressive.
+...
+I'm going to try a couple things.
+...
+The index is ~120MB when JSON encoded.
+...
+If I encode then decode the index, the memory drops a lot.  It goes from ~700MB
+down to ~240MB, which is sizable.  It may be that there is less fragmentation
+of the string data.
+....
+I closed the file stream when done, wondering if was buffering a lot of that
+data and it didn't make much difference.  Maybe 50MB.
+...
+I've added an extra encoding/decoding step to the index which not only 
+releases the memory but has the nice side-effect of _always_ testing my 
+Coding compliance when I read the index.  It doesn't get returned unless it
+has been encoded/decoded. 
+..
+Looking at the profiling, the big function is where I parse thef ile character-
+by-character, which is not surprising.  I don't anticipate this is important
+enough to worry about after it is encoded the first time.  I'll just be dumping
+this into the document and moving on.
+...
+Ok, that's enough with the index for now.  It looks decent enough to move 
+forward with.  This only confirms my intuition about how this app experience
+should be organized.  There's too much data to grind through it in realtime,
+even with macOS.
+...
+I'm going to draw for a little bit, maybe play with some other apps to get
+some ideas about patterns.  I'm going to take a look at iMovie.
+...
+Hmm.  iMovie is similar to this in that it is a stitched-together selection
+of clips.  In my case, the clips are individual exhibits.  
+
+The organization of this is similar.  The index is basically equivalent to the
+clip library.  The bottom should see something like a timeline also since
+the tour will need to have a sequence.   The difference is probably that there
+should be a property inspector on the right that offers a preview of content
+on top and the properties of that content below (like the text displayed).
+...
+The preview could be useful for sure, but I need to understand how this will
+be displayed in MetMinded first.  The immediate objective has to be to 
+start creating tours that I can export.
+....
+Ok, I have a basic idea about how to approach the designer.  There's sill a ton
+to do there before I get a tour going.  I need to optimize this path.
+....
+I was looking at the difference in how data was being propagated with the 
+document between the designer and RRouted.  Apparently when you use a class
+for the document, you can use the environment object, otherwise you need to
+bind to the oringal copy.  That makes sense.
+....
+I'm looking at the SwiftUI inspector behavior and it is only in macOS 17+.  I
+probably need to make a choice about upgrading.  I may do it.  It's been four
+months since macOS was released.  Then again, I could take my time and just
+build something I can use for now and come back later.  The DocProto I built
+a few months back has a 3 column layout with a property inspector.  I can
+bootstrap with that.  That's a better plan until I figure out what I want to
+do.  Maybe in the mean time I should get a new hard drive for my TimeMachine
+backup before my upgrade.
+...
+Ok, I have a plan for tomorrow and it's pretty strong.  I can get started with
+the skeleton of the document app using the knowledge I gained working on 
+RRouted and knock out enough to get the basic data in place so that I can
+begin the index display and exhibit creation soon.
+
+Good day.
+
+
+
+Friday, January 26, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- Skeleton as navigator, editor and inspector.  Use the
+			DocProto from the RRPrototypes as a reference.
+			- COMPLETE: document as class with filewrapper and 
+			proper ext
+			- COMPLETE: move document propation back as an 
+			environment object
+			- COMPLETE: Add met object index to the document.
+			- verify undo of setting the index. 
+			- fix the publishing of changes from background thread
+			warning during import.
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+Today I'm going to spend time with MetDesigner.  Should be fun.
+...
+I spent a lot of time today with the document parsing broken because I was
+trying to use the `serializedRepresentation` instead of the 
+`regularFileContents` for the data files in the document.
+...
+The index is now being saved in the document.  It isn't perfect yet, but getting
+there.
+
+Good day.
+
+
+
+Saturday, January 27, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Starting into the SwiftUI again.  This stuff is very hard for me to internalize
+because I haven't spent significant time with it.  With RRouted I'd spend a few
+days with the UI and then jump into a lot of modeling, forgetting nearly
+everything I learned.  This project could be compelling because it is more
+UI than modeling.  I'm hoping to take away a lot of experience from it.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- Index population UI that takes the place of the 
+			main area.
+				- COMPLETE: stub behavior
+				- COMPLETE: custom import button
+					- COMPLETE: sizing
+					- COMPLETE: tap
+					- COMPLETE: styling
+				- refine status text layout for states
+				- copy describing indexing with button
+				- link button to MetObjects site.
+				- How to display errors?
+				- How is localization done for error messages?
+				- drag and drop behavior
+				- COMPLETE: better progress for importing
+			- Skeleton as navigator, editor and inspector.  Use the
+			DocProto from the RRPrototypes as a reference.
+			- verify undo of setting the index. 
+			- fix the publishing of changes from background thread
+			warning during import.
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+Alright.  The first step is to get the skeleton of the app displaying.  I'm
+pretty certain that the primary window should be modest to begin with so that
+I can put the index population UI in there and then it will transform into
+a more significant thing.
+...
+Refreshers:
+* the scene has defaultSize and defaultPosition modifiers that allow the
+window to be given an initial size.  there's no indication of how one would
+tie this to the document contents.
+* The difference between @Environment and @EnvironmentObject appears to be
+related to whether the new @Observable macro is used over ObservableObject.
+* Images by default try to maintain their minimim size, especially when it is
+using SFSymbols.  This can be overridden by the .resizable modifier and
+either .scaledToFit or .scaledToFill which will allow the image to be explicitly
+sized.
+....
+I was going to do the workspace first, but the app doesn't make sense without
+an index, so I'll focus on the index selector initially.
+...
+Balls.  I'm immediately stuck with the image button.
+....
+I have a decent start on this indexing.  The button looks pretty good and
+I have a progress bar I like.  I'll refine it some more next time but this
+should get me going with the main app.
+
+Good day.
+
+
+
+Sunday, January 28, 2024
+------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I think I see the value of the canvas during development and using the states
+because that visual debugger doesn't appear to work fully with SwiftUI.  Maybe
+it does on iOS, but on mac it doesn't let you select individual items and
+see anything about their size or layout - not easily at least.  I want to
+build a better display so I'll experiment with ideas here first.
+...
+I found something that works pretty well to better see this in the canvas.  I
+used a fileprivate initializer with more access to the flags.  My assessment
+is that the progress view is affecting the height of the group before it is 
+scaled.
+
+There's also something else going on.  The button isn't staying in the center
+of the view.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- Index population UI that takes the place of the 
+			main area.
+				- COMPLETE: copy describing indexing with button
+					- markdown?
+				- COMPLETE: refine status text layout for states
+					- COMPLETE: improve previews
+					- COMPLETE: group offset from button
+					- COMPLETE: progress item sizing
+				- COMPLETE: link button to MetObjects site.
+				- COMPLETE: drag and drop
+				- COMPLETE: change color of button when disabled
+				- How to display errors?
+				- How is localization done for error messages?
+				- drag and drop behavior
+				- COMPLETE: better progress for importing
+			- Skeleton as navigator, editor and inspector.  Use the
+			DocProto from the RRPrototypes as a reference.
+			- verify undo of setting the index. 
+			- fix the publishing of changes from background thread
+			warning during import.
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+			- add animations to import and screen transitions.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I have the layout of the indexing screen looking pretty good and it is 
+functional for both tapping or drag/drop.  The next task will be to research
+how to display error dialogs and to do localization so that we can get a 
+more refined experience.
+
+Good day.
+
+
+
+Tuesday, January 30, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to focus on refinements to what I have today and learn a bit about
+the tech needed to deliver a more complete experience, including error handling
+and localization.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- Index population UI that takes the place of the 
+			main area.
+				- COMPLETE: How to display errors?
+					- COMPLETE: experiment with alert
+					- COMPLETE: experiment with sheets
+					- COMPLETE: custom alert modifier with 
+					structure that takes the title, 
+					sub-title and action to perform when 
+					dismissing.
+				- COMPLETE: How is localization done for error 
+				messages?
+					- COMPLETE: Review string catalogs.
+					- COMPLETE: can I localized the model 
+					framework?	
+				- COMPLETE: drag and drop behavior
+				- COMPLETE: better progress for importing
+			- Skeleton as navigator, editor and inspector.  Use the
+			DocProto from the RRPrototypes as a reference.
+			- verify undo of setting the index. 
+			- fix the publishing of changes from background thread
+			warning during import.
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+			- add animations to import and screen transitions.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+....
+I looked it up yesterday and there is an `.alert()` modifier that is used to
+display simple alerts.  I'll play with that a bit and I think probably build
+a custom modifier to present it, ideally with styling and localization.
+...
+I came up with an approach with a structure that holds the alert isVisible and
+extra details about how it should appear.  That could be a state variable on
+a view that just gets populated when the time comes to display it.  You just
+need that and a custom modifier that takes a binding to that state structure
+and you could put what you want in there.
+...
+I tried the sheet and it appears in the middle of the screen well enough and
+respects the sizing, etc.  It would require custom design to make it work, which
+could be fine, but I'm not sure it is worth the effort right now.  I think
+a custom modifier for the alert that is localized would be pretty good.
+....
+Ok, I have a first pass at standard alerting with a custom modifier.  The
+usage for it is pretty clean and I should be able to swap it out for a sheet
+later if I want something more elaborate.
+...
+The next task is to figure out localization. The string catalogs appear very
+clean.
+...
+I figured out how to send custom localized messages back from the framework,
+which really jsut requires that I assign the right bundle.  I added some
+custom initializers so that my code there is more obvious when it must
+be localized.  
+...
+Ok, so I accomplished what I wanted to do today.  The app is localized and
+has some basic error reporting.  Localizing it is going to add cost to what I'm
+doing but I think it is a useful skill to develop.  The strings catalogs are 
+really convenient for this purpose.
+
+Great day.
+
+
+
+Wednesday, January 31, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I forgot to mention the other day that I had what I think is a *great* idea for
+how I can publish dynamic content without deployments.  I'd added a task to
+look into github.io at one point and did a little bit of recon on it.  It 
+turns out it is basic web hosting that is provided for free from GitHub.  That's
+the perfect place for me to put a series of files that provide the dynamic
+experience without firing up servers.  I can publish to there and easily 
+download them later.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- COMPLETE: Index population UI that takes the place 
+			of the main area.
+			- COMPLETE: Workspace as navigator, editor and 
+			inspector.  Use the DocProto from the RRPrototypes as 
+			a reference.
+				- COMPLETE: three column format, one expansion 
+				button
+				- COMPLETE: editor is split into index and 
+				tour editor
+			- COMPLETE: verify undo of setting the index. 
+			- COMPLETE: fix the publishing of changes from 
+			background thread warning during import.  UPDATE: 
+			warning is no longer appearing.  Not sure if I fixed
+			that intentionally or not.
+			- figure out how to save window size and split positions
+			- bring app into foreground when launching - not 
+			happenings.  can I use that app delegate to do it?
+			- rename object ref to exhibit ref
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+			- add animations to import and screen transitions.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+Alright.  So the v1 work is progressing.  The indexing experience is probably
+good so now I need to get the navigator going and try to remember what I'd
+envisioned for that.  I think iMovie gave me some ideas on that front.
+...
+Ok, I think I get it.  
+....
+I'm attempting to save/restore my window better so that the sizes are defaulted
+when the app restarts.  I'm finding a few good ideas here and there:
+- this introduced me to NSApplicationDelegateAdaptor --> https://stackoverflow.com/a/76259407
+	...but that implies not a pure SwiftUI app.
+- this is more official --> https://developer.apple.com/documentation/swiftui/restoring_your_app_s_state_with_swiftui/
+	...I'm reminded now there is some sort of weird macOS setting that
+	prevents this from happening.
+....
+Hmm.  This scene storage and user activity are interesting.
+	...of the two, scene storage seems like what I need here.
+....
+I'm attempting to use scene storage to save the window size for the default
+in the scene.  So I added the scene storage at the top of the app and tried
+to use it for a default size with this result:
+ 'Accessing a SceneStorage value outside of being installed on a View. This i
+  will always return the default value.'
+...
+I'm not sure if I like any of what is there.  It isn't immediately obvious
+what the behavior is of this scene storage, particularly with documents.  I 
+have an idea that I could use something like this with a better persistent
+mechanism:
+
+	var body: some View {
+		GeometryReader(content: { geometry in
+			Group {
+				if document.isIndexed {
+					WorkspaceView()
+				}
+				else {
+					IndexImportView()
+				}
+			}
+			.onAppear(perform: {
+				didAppear = true
+			})
+			.task(id: geometry.size) {
+				windowDefaultSize.cgSize = geometry.size
+			}
+		})
+		.frame(width: didAppear ? nil : windowDefaultSize.width, height: didAppear ? nil : windowDefaultSize.height)
+    	}
+
+If the document itself has an object that saves UI state in the application
+support directory keyed by the document itself, that could be preferrable 
+because I'd have full control over when it is persisted and use the same
+infrastructure for the split views.  In fact that could be an observable
+object and I could use it also for selection changes.
+
+So the idea is this is some sort of UIState that is persisted in a safe space
+from the document while also publishing some things like current selection so
+that multiple screens can subscribe to it.
+
+	@ObservedObject private var uiState: MDUIState 
+
+	...or similar.  Not sure how that works when the object is in the
+	document but I think it may work.
+.... 
+That's it for today.  Not a ton accomplished but I have some ideas.
+
+
+
+Thursday, February 1, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+My goal for today is to build a quick prototype of this idea I have and see
+if it works before going all in with a solution that addresses UI state 
+holistically and per-document.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- figure out how to save window size and split positions
+				- COMPLETE: prototype saving sizes in a custom 
+				location for app.
+				- COMPLETE: custom modifier for watching size 
+				changes
+				- COMPLETE: create an observable user state 
+				object.
+				- COMPLETE: save window and inspector size.
+				- add other pane dimensions to user state.
+				- use max width when user state pane is nil
+				- Don't save state until document is saved.
+			- COMNPLETE: use a distinct type for identifiers.
+			- bring app into foreground when launching - not 
+			happenings.  can I use that app delegate to do it?
+			- rename object ref to exhibit ref
+			- rename the index, maybe not pretty-print it.
+			- split editor into index and tour panes
+			- index pane should have a way to load the metobjects
+			index, including a link to where it is in GitHub.
+			- save the index with the document.
+			- load the index from the document when loaded
+			- add animations to import and screen transitions.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ObjectRef --> Object --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- objectref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+That technique works for the window.
+...
+I'm learning that the .task(id:...) modifier is quite nice for (a) watching a
+value and detecting changes and (b) for executing non-SwiftUI code when it
+happens.
+...
+I tried the same approach with the inspector, but it isn't respecting the
+ideal width.
+...
+Ok, I got something to work for the inspector.  The trick is to _not_ use
+the maxWidth attribute on the frame because it will attempt to size to its
+maximum, overriding any initial value.  The view reports its width and sets
+it with the .frame modifier up until the view appears.
+...
+Alright, this can work.  Now I need to productize this.  I'm going to try 
+something different and replace my prototype code with better code without
+reverting it all.
+
+I have a pretty good little user state object saving to disk and reloading.
+There's some additional integration with the other panes and refinements but
+I'm pretty confident this is going to work well.
+
+Great day.
+
+
+
+Friday, February 2, 2024
+------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'd like to wrap up the restoration work for the window and probably begin
+thinking about how the index fits into this experience, since I have that data.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- COMPLETE: figure out how to save window size and 
+			split positions
+				- COMPLETE: add other pane dimensions to user 
+				state.
+				- COMPLETE: Add a directory for user state
+				- COMPLETE: bug: why is it forcing creation 
+				still?  UPDATE this is caused by the document 
+				system creating an empty document initially.
+				- COMPLETE: use max width when user state 
+				pane is nil
+				- COMPLETE: Don't save state until document is 
+				saved.
+			- REJECTED: bring app into foreground when launching - 
+			not happenings.  can I use that app delegate to do it?
+				- FYI: https://stackoverflow.com/a/76259407
+			- COMPLETE: rename object ref to exhibit ref
+			- COMPLETE: design index user experience
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- COMPLETE: rename the index, maybe not pretty-print it.
+			- COMPLETE: split editor into index and tour panes
+			- REJECTED: index pane should have a way to load the 
+			metobjects index, including a link to where it is in 
+			GitHub. UPDATE: Old design.
+			- COMPLETE: save the index with the document.
+			- COMPLETE: load the index from the document when loaded
+			- add animations to import and screen transitions.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I have a decent cut of the user state being persisted and restored.
+...
+My file open dialog wasn't being brought into the foreground when I'm debugging
+but I think this is just an Xcode thing.  It was annoying to have to tap the
+app to show it, but I'm not going to worry about it.
+...
+Alright, another step completed.  The indexing looks good, the window structure
+looks good, the design is pretty clean I think and I should have enough to
+display some content.
+
+The index is the key to this.  Some things that I think are necessary:
+- the index is displayed as a grid above
+- there is a search bar above the grid with a series of filter controls
+under it.  I think minimally a few flags for highlight or timeline, a dropdown
+for department at least to start.
+- changing anything related to the search criteria immediately displays the
+content in the index.
+- selecting an item in the index probably should display the ref in the
+inspector
+...
+So I think the index needs to be organized so that it can do searching/filtering
+and returbn an alternate list of the references.  The filtering should be
+asynchronous and maybe even cancellable.  But what happens once it is filtered?
+Do I save the results?   I need to think on that so I'll leave it for today.
+
+Good day.
+
+
+
+Saturday, February 3, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I realized the most important question is, 'can I display the full index in a
+lazy grid?'  The full index of public items is like 250K, which is huge.  If
+that doesn't work, then I need to think about the design more for the UI
+experience.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- simple grid with full index - can it be done?
+					- COMPLETE: create large index file.
+					- COMPLETE: lazy grid?
+					- add identifier to index
+					- create a FilterCriteria structure
+					that can include items for matching.
+					Codable
+					- create a FilterContext structure
+					that includes (an optional) list of
+					indices.  Codable.
+						- has public access to the
+						criteria
+					- create an ExhibitCollection type that
+					combines a filter context with the index
+					that generated the context and allows
+					random access references to the data.
+						- has public access to the 
+						context
+					- add a method to the index (async) that
+					will filter with criteria and return
+					an exhibit collection
+					- add a method to the index that 
+					returns an exhibit collection for a
+					given context if the context matches the
+					index.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I spent a little time publishing my recent cut of the work here to my portfolio.
+There was some reorg and other shit to deal with, but it's up there now.
+...
+Ok, so I'm going to hit this grid hard today and try to answer that question.
+...
+That lazy grid performs great.  I mean, there's 248,391 items and it cuts 
+through them _like butter_.  Just fucking amazing.
+
+I adopted RandomAccessCollection for the index which likely helps a lot for
+quickly referencing items.  The question is, how best to organize the index
+knowing this fact? 
+
+Looking at informal timing during load, the highest cost (not surprising) is
+the decoding of the exbibits in the big list (3.5s).  The iterating over them 
+is actually quite fast once it is built (0.06s).  That's one good thing.
+....
+So then I guess the question is, what do I store and how do I store it?  I'm
+wondering if I should have both the iterator for the standard array and a
+second 'filtered' state that gets swapped-in  when a filter is applied to
+the index.  But that filter isn't something I can easily persist.  I'd like
+to have something that is related to the index, but not in the index so that
+it isn't part of the document, but ideally something in the UI state.
+
+What I'd like to do is apply a filter:
+...get a filter context which saves the filter criteria and something opaque
+that describes the items in the filter.
+...then be able to ask the index for an 'ExhibitCollection' with that context
+that really just creates a new collection interface that combines the
+index reference with the filter context so that you can quickly iterate over it.
+
+When you apply a filter, you get an exhibit collection, with a context as a
+property in it that can be encoded.  Then you can ask an index for a collection
+using that context.
+
+So, I think every index needs:
+	- an identifier so we can be sure about it.
+	- the index saves the list of objects as it does now
+	- the act of filtering is asynchronous and generates a filter context
+	structure with the items that match in it.  The context has the 
+	index identifier and a list of indicies that match item sin the
+	index.
+	- the filter request returns an exhibit (random access)) collection 
+	with the filter context in it and a reference to the object.  The 
+	exhibit collection *is not* encodable but the filter context is 
+	encodable.
+		- the collection should never store objects and only use
+		the internal context as a lookup table into the index.
+	- the index has an exhibitCollectionForFilterContext method that
+	will take a previous context and return the collection for that
+	item if it matches up.
+....
+That will work I think.  Then when I have that random access collection, I
+can just tie that into the grid, probably keeping the collection as a state
+variable with the view or document.
+....
+Next step is to just chew on this design in the background to make sure I feel
+good about it.  My goals are:
+- it is efficient for very large lists (>100K) elements
+- it only bears the cost of filtering once, even between app restarts.
+- the filtered contents don't require significant storage. 
+...
+I'll stop there for today and review it in preparation for tomorrow.
+
+
+
+Sunday, February 4, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I think I need to spend more time with the grid.  The design work from yesterday
+feels pretty right, but I should really just stub it out miniimally so that I
+can spend all my time with the UI.  The way the grid is styled and evolves is
+the new big question.  The lazy grid appears to be implemented differently than
+the standard one, which could be an issue.  I will build the basics for the 
+filtering and then focus my attention on producing the best layout possible 
+for that grid.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- simple grid with full index - can it be done?
+					- COMPLETE: add identifier to index
+					- COMPLETE: create a FilterCriteria 
+					structure that can include items for 
+					matching.  Codable
+					- COMPLETE: create a FilterContext 
+					structure that includes (an optional) 
+					list of indices.  Codable.
+						- has public access to the
+						criteria
+					- COMPLETE: create an ExhibitCollection
+					type that combines a filter context 
+					with the index that generated the 
+					context and allows random access 
+					references to the data.
+						- COMPLETE: has public access 
+						to the context
+					- COMPLETE: add a method to the index 
+					(async) that will filter with criteria 
+					and return an exhibit collection
+					- COMPLETE: add a method to the index 
+					that returns an exhibit collection for 
+					a given context if the context matches 
+					the index.
+					- add text filtering
+					- add flag-based filtering
+			- index search
+				- COMPLETE: experiment with styling.  how close
+				 can I get?
+				- spreadsheet exhibit row 
+					- styles elements
+					- returns column definitions
+				- row selection
+				- simple grid layout connected to collection
+				- full grid layout connected to collection
+				- sorting columns?
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I learned that it is possible to style the grid pretty well and apparently I
+can even put the rows into a separate entity.  The styling can be reasonably
+good, but I need to ensure all the sub-items can expand to the full size 
+provided or they'll be constrained to the smallest and oddly enough even if the
+row is organized into a 'Group', the group only gets a tap for the sub-items
+themselves, but not for the bounds of all the items together.  That means each
+item needs to efficiently adapt their size.  I think I should be able to make
+this work pretty well.
+
+Good day.
+
+
+
+Monday, February 5, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Today I'm spending time with the grid styling.  I'll pull up Numbers and see if
+I can make it look like that.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- COMPLETE: filter context in user state.
+				- COMPLETE: add exhibit collection state.
+				- spreadsheet exhibit row 
+					- styles elements
+					- returns column definitions
+				- row selection
+				- simple grid layout connected to collection
+				- full grid layout connected to collection
+				- sorting columns?
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+Well, I'd say the first thing is to get some state into my current view that
+represents the current filter.
+
+I need to add a way to have a nil filter context because that just makes sense
+when the user state doesn't yet have one.
+
+As I'm seeing this fit together, this is much more natural now for UI.  My
+intuition served me well.  The context has the search criteria so by just saving
+the context, I have the default search criteria ready to go in the UI when
+it starts. 
+
+I just remembered I have to pay bills, so I'm cutting it short today 
+unfortunately.
+
+
+
+Wednesday, February 7, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I should have enough to start drawing today.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- COMPLETE: header row w 3 columns
+					- COMPLETE: styling
+					- COMPLETE: integration into spreadsheet
+				- spreadsheet exhibit row w 3 columns
+					- styles elements
+					- returns column definitions
+				- row selection
+				- simple grid layout connected to collection
+				- full grid layout connected to collection
+				- sorting columns?
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I've been thinking about how to organize this since the other day.  I feel
+pretty psyched to see this in action.
+...
+The first pass of the header looks pretty good.  Now I need to create the
+individual grid rows.
+...
+I got a first stab of row layout set up, but not yet integrated into the grid.
+I'll come back around tomorrow.
+
+Good day.
+
+
+
+Thursday, February 8, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Goddamn, I'm going to get the index displaying today.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- COMPLETE: spreadsheet exhibit row w 3 columns
+					- COMPLETE: styles elements
+					- COMPLETE: returns column definitions
+				- COMPLETE: row selection
+					- COMPLETE: add selection behavior to 
+					user state
+					- COMPLETE: integrate rows with user 
+					state
+				- COMPLETE: simple grid layout connected to 
+				collection
+				- COMPLETE: full grid layout connected to 
+				collection
+				- COMPLETE: profile in instruments
+				- remove columns to improve performance?
+				- spacing inside scroller?
+				- testing sample document so I can play with
+				UI in canvas?
+				- horizontal scrolll
+				- sorting columns?
+				- localization updates.
+				- COMPLETE: link resource as clickable link?
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+The grid works pretty well with that big result set in it.  I only have 3 
+columns and more or less have the selection working with one bug in it.  I'm
+not getting UI updates in later rows in the list  when I change selection.  It
+is likely this is due to the optimizations for a lazy grid, but apparently a
+simple binding isn't sufficient.  I think I'm going to figure out the 
+selection in the user state.
+..
+I may understand what was happening.  I was assuming that a Binding acted 
+like an observable for a child, but I don't think it does.  The binding
+allows the child to communicate with the parent _in one direction_, but the
+parent must rebuild the child with the same binding to force a layout change.
+
+By converting to a true ObservableObject, the seection now does the right thing.
+...
+I'm wondering whether to embed a smaller index into the MetModel so that it
+can be used as a test dataset.  I'll think on that one.
+....
+The full grid is set up finally.  It is a bit sluggish to show all that content
+though.  I'm tempted to trim it down since most of it doesn't matter for the
+grid.
+...
+Before I do that I'm going to try Instruments to see what it shows is the issue.
+Obviously, showing 250K items in a single list is a possible issue, but I 
+wonder if that's the real reason.
+...
+I read over this again: https://www.hackingwithswift.com/quick-start/swiftui/how-to-use-instruments-to-profile-your-swiftui-code-and-identify-slow-layouts
+	...and while it give some tips, it didn't help with this problem. 
+	...I guess I could look at it that it did actually help because I 
+	determined that my issue doesn't appear to be with particularly slow
+	code in the MetModel framework.  It appears to indicate that the
+	biggest view body cost comes from ExhibitCellView (which makes sense)
+	and may just mean I'm trying to show too much.  There are a lot of
+	cells in each row.
+....
+It does seem that it is better with fewer columns.  I'm going to rethink that
+spreadsheet a bit, especially when looking at the content in there.  The
+key for that spreadsheet is to display the content that matters, even though
+I'd like to display more.  
+
+Oh fuck me.  I just realized I've only been looking at the medium example.
+I wonder if this does work at all with the large one.
+...
+Yeah, the performance is about the same for the giant one, so that's good.  My
+issue is redraw apparently.
+
+Good day.
+
+
+
+Friday, February 9, 2024
+------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to spend some time with optimization.  I'd like to understand more
+about what is causing that grid to lag.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- COMPLETE: optimize index display?
+					- COMPLETE: undestand current 
+					measurement
+					- COMPLETE: revert to simple text and 
+					compare
+				- REJECTED: remove columns to improve 
+				performance?
+				- REJECTED: spacing inside scroller?
+				- search bar stub
+					- custom search field, 
+					focusEffectDisabled?
+				- list stub
+				- update index to search by text
+				- testing sample document so I can play with
+				UI in canvas?
+				- REJECTED: horizontal scrolll
+				- REJECTED: sorting columns?
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I'm assuming that the content is too complicated, but that feels like an over
+simplification.  I want to understand the nuances.  I wish there was a way to
+see the framerate over time so I could compare.
+...
+I tried an experiment where I captured data from the existing implementation
+in instruments and then changed everything to simple text elements in the
+output.  In the second there was only a single reported hang compared to nine
+in the first and the animation was much smoother with no high-severity core
+animation commits in the second compared with 44 in the first.  It's a little
+hard to do apples to apples, but the simpler layout is clearly better for
+performance.
+
+For my third test, I cut down the columns to one simple text item and it was 
+even better.  This time there was only 2 moderate severity commits for CA 
+compared to 223 before, not suprisingly feeling a lot smoother.
+
+For my fourth test I reintroduced a single custom cell, which had similar CA
+performance to the basic text.
+
+My interpretation at this moment is that there are probably too many columns
+for this.  It isn't designed to be an infinite-scrolling spreadsheet.  I'm
+going to go with my intuition from yesterday that I need to pull out some
+of these columns.  Many of these aren't relevant for searching.  When I get
+selectino working in the inspector, I can easily show all the other things 
+related to this.
+....
+The good news is that the really large file still works the same.  That tells
+me that my approach for random access is sound. 
+
+As I look at the data in this index, it isn't very good.  Many of the names
+and titles are the same in each row and there are sometimes many dozens of
+rows that have the same name/title.  Now I suppose I could have a tour of
+just early american basins, but for me to even craft something like that, I
+need to be able to better understand what is here.
+
+I do see that there's certainly some decent text in the Met Art web page for
+each item, describing it, but the desntity of useful content in the index is
+very low.  That makes me think that I should take a different approach with 
+the index.  It could be that the more important thing is the search and that
+list should be very focused.
+
+I think something where I create a piece of text from that exhibit reference
+that narrows it down more succinctly like:
+
+	title (optional object type if different), nationality or department, 
+		(in medium) 
+
+Then just show a list, but have a fairly significant search region above it
+where you can filter by department, culture, search text and tags maybe.
+....
+I think I should maybe shelve what I have right now with the spreadsheet and
+explore the search more.  I'm not yet sure what kind of performance I can 
+expect from inline search.
+....
+Fuck me.  I continue to bump into things that are only available in macOS 14
+and I'm not super excited about upgrading.  I should just fucking do it.
+...
+I think I'm going to do it.  I'll begin backing up now and let this run today.
+
+Hard to say if this is a good day yet.
+
+
+
+Saturday, February 10, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm on the new version of macOS.  I'm going to start by seeing if there's
+any improvement with the grid, just for grins.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- index display
+				- search bar stub
+					- custom search field, 
+					focusEffectDisabled?
+				- list stub
+				- update index to search by text
+				- COMPLETE: testing sample document so I can 
+				play with UI in canvas?
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+The performance may be a little better, but a small degree, but not 
+significantly.  There are still a lot of high-priority commits in CA.  It
+was a nice thought at least.
+...
+I just learned that with a TextField, it will display a focus border if it its
+.textFieldStyle is *not* `.plain`.
+....
+I'm trying to wrap my mind around this new approach for building UI.  In one
+sense it is a lot more efficient, but in another, you lose much of the fidelity
+and predictability with composition.  The documentation gives you no information
+about how it will look in the different contexts.  I just spin and lose context
+on the slightest things and often not even sure if I can achieve what I'm
+trying to do.  Alternatively, this is the way that things are being done.  The
+cost of development must necessarily shrink and devs need to achive more to
+justify their existence.  SwiftUI is likely very reasonable for most of the
+industry that builds mobile apps.  I'm just not sure that it is a great thing
+for me when building desktop ones.
+
+This project is about forming opinions, which I suppose I'm doing, so this is
+reasonable.  I need to dig into this more.
+
+The next task is beginning the interactive search and filtering.
+....
+I need to forget about some of this UI nonsense and figure out how to get 
+the searching working. 
+....
+I'm going to tackle this testing challenge right now.  The model probably needs
+a way that I can generate a fake index.
+...
+I'm not sure if the approach I'm using for the sampling index is a good one.
+I may want to actually build constant values so there's consistency between
+runs.
+
+Not as much done today as I'd have liked.  Try again tomorrow. 
+....
+....
+I have some time again.  I'm going to try to knock some more out.  I'll just
+focus on creating sample data in a brute-forced way.
+...
+THe sample data is set up in the index and works well for what I need in 
+SwiftUI.  I think I'll stop there for today.
+
+
+Sunday, February 11, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Looking at the index, I'm more aware that the data isn't great.  There's
+fields that _could_ have useful data, but they often do not or it is 
+inconsistent, redundant or minimally applicable.  This isn't the equivalent of
+an indexed encyclopedia, but a best-effort by someone with more important things
+to consider.  It follows that showing a grid/spreadsheet is a poor 
+reppresentation of the content.  I'm not even sure that filtering based on
+specific fields is often useful whith the exception of maybe the dates of
+creation.   My idea is to change the search into something more freeform with
+text search being the primary consideration.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- COMPLETE: initial text search
+				- collection returns a text item and a
+				reference to the exhibit as a custom struct
+					- built when requested in collection
+					- exhibit
+					- offset
+					- text for the item that includes the
+					matched items in it.
+				- search by year
+				- search performance
+			- index display
+				- COMPLETE: search bar stub
+					- DEFERRED: custom search field, 
+					focusEffectDisabled?
+				- COMPLETE: list stub
+				- initial search behavior.
+				- trigger delayed search when typing.
+				- update index to search by text
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+My new plan is to combine search with display using a text-based model almost
+entirely with the exception of the years and then build text output that shows
+the matches in a list.  So if you search on 'Abraham Lincoln', it would present
+the text, probably highlighted or bolded, where those words exist in the 
+exhibit data because all you really care about is whether an exhibit has that
+attribute or doesn't, nothing more.
+...
+My next task is to spend time with the search algo in the framework.  I need
+something I can connect to the UI.
+...
+The text search is rather interesting because if I really want to highlight
+the sub-items, I have to consider the cost of how the search process and whether
+it is better to take longer to organize the sub-text at that time or before
+displaying it.  That is probably somethingI should do emperically.
+...
+Ok, I have initial search done although I'm wondering whether to save the
+custom struct instead of the offset.  Maybe that's not something to be
+concerned with right now.  The custom struct is the right approach so that I
+have normalized exhibit text descriptions that incorporates the search criteria
+into them.
+...
+This will get me farther I think and will be pretty reasonable.  I can build a
+quick, targeted list for the content being searched and then selection will
+probably pull in the more formalized data.
+
+Good day.
+
+
+Monday, February 12, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+The plan is to wire up the filter into the UI today and start to iterate on
+the quality of the content..
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- COMPLETE: do matching inside collection struct
+				- COMPLETE: add match rule for AND/OR 
+				- COMPLETE: testing for match rule behavior.
+				- COMPLETE: collection returns a text item and a
+				reference to the exhibit as a custom struct
+					- COMPLETE: built when requested in 
+					collection
+					- COMPLETE: exhibit
+					- COMPLETE: offset
+					- COMPLETE: text for the item that 
+					includes the matched items in it.
+				- formatted text result - basic
+				- formatted text result - highlighted
+				- search by year
+				- search performance
+			- index display
+				- COMPLETE: initial search behavior.
+					- COMPLETE: typing search values 
+					initiates background search canceling 
+					prior
+					- COMPLETE: display search results
+					- COMPLETE: verify cancellation
+					- COMPLETE: add status indicator
+					- COMPLETE: experiment with large index
+				- REJECTED: trigger delayed search when typing.
+				- COMPLETE: update index to search by text
+				- save context in user state
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+The filtering is really quite fast, even with the really big document.  Now
+I'm not sure how it is going to play out with more UI magic going on but I'd
+imagined that I might need to break up the filter into separate tasks, but it
+isn't even clear that's necessary. 
+...
+The next step is to refine this.  I want to make the collection the key to
+the matching and formatting of these exhibits, keeping all the code in there
+although it sort of sucks because it exists in the same file as the index.
+	...I rethought that.  The point of making a framework was to give me
+	cross-file collaboration without exposing internal details.
+...
+As I'm improving the qualify of matching but now adding a matching rule (AND/OR)
+the filtering is getting a bit slower in the bigger index.  Not signfiicantly
+yet, but slightly.  I may try a concurrent approach yet since this data set
+is perfectly designed for it.
+...
+Today is turning out to be a great coding day.  I'm just barely glimsing the
+interplay between the UI behavior that I experiment with and the adjustment
+of the model to support it.  It wasn't until I tried to search that I realized
+the importance of applying an AND rule to all the individual text items for
+many cases so that you could narrow down the results.  I was then able to
+imagine cases where an OR rule would also be useful like 'Abraham Lincoln' OR
+'Benjamin Franklin'. 
+....
+This is a much bigger project than I anticipated though.  It is definitely
+delivering on my goal of allowing me to really understand SwiftUI patterns and
+even the concurrent patterns better because of the tighter UI iteration loop.
+...
+I'm wondering if doing the text formatting at the last minute is a good idea
+because it could introduce a lot of cost in the UI path, but the alternative is
+to perform a lot of work when filtering that isn't used in many cases.
+
+Actually, I have an idea.  I could possibly do it during collection creation
+time since it is an async method in either case (load new or load from state).
+That's still not ideal though because it will slow down the first display.  I'll
+see if the performance I'm seeing in general is sufficient to compute that
+text on-demand.
+...
+So the text next.
+...
+The first pass is pretty good.  I'll jump into the rest tomorrow.
+
+Great day.
+
+
+Tuesday, February 13, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I think the default unfiltered output should be fairly complete so that I can
+just scroll the list and see the full content because you never know what may
+be relevant.  When I start matching individual columns, I'll make it a bit more
+sparse probably with some fixed columns at the front.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- COMPLETE: formatted text result - basic
+				- COMPLETE: sort the index by title, object 
+				when building
+				- COMPLETE: fix sort with special characters 
+				in title.
+				- performance of scrolling large list
+					- put the filtering in the background
+					- exhibit collection init() needs to
+					be async
+					- pull text generation out of the
+					exhibit item and have it include a
+					constant.
+					- generate text for each item one at
+					a time and save it with the collection
+				- formatted text result - highlighted
+				- search by year
+				- search performance
+			- index display
+				- save context in user state
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+The large index is getting bogged down while scrolling.  I think I need to 
+rethink how I'm retrieving those items and probably pre-build them when I
+generate the collection.  The async nature of both of these filter methods
+allows for that kind of pre-calculation.
+....
+Ok, that's it for today.  I'll work on this tomorrow.
+
+Good day.
+
+
+
+Wendesday, February 14, 2024
+----------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I've been thinking about the performance of all this and how to address it.  The
+ideas from yesterday are good, but I think the main index needs to be updated to
+include that default text.  Although it will expand the size of the file, it
+will ensure the default performance profile.  This file is expected to be large
+since it is an import of the larger content.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- REJECTED: try adding search text to the 
+				actual file and ref objects.  UPDATE: Made no
+				difference
+				- COMPLETE: Try omitting non-latin characters
+				- REJECTED: Try omitting CR/LF characters
+				- COMPLETE: performance of scrolling large list
+					- REJECTED: put the filtering in the 
+					background
+					- REJECTED: exhibit collection init() 
+					needs to be async
+					- REJECTED: pull text generation out of
+					 the exhibit item and have it include a
+					constant.
+					- REJECTED: generate text for each 
+					item one at a time and save it with the
+					 collection
+				- formatted text result - highlighted
+				- search by year
+				- search performance
+			- index display
+				- save context in user state
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+			- don't include non-latin fields: 
+				https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+Hmmm.  I built the text and embedded it right into the exhibit, but the same
+problem still keeps occurring.  It makes me wonder if the issue is with the 
+lazy list.  For reference, the thing I'm seeing is that the list lags out and
+displays nothing.  
+
+I tried using a lazy grid wondering if maybe its performane characteristics were
+better, but with no success.  I'm going to try a very simple test to see if it
+will lag with long, slightly dynamic content.
+...
+Hmmm.  The simple test didn't lag out - I just grabbed some generic Lorum-ipsum
+text online and concatenated a UUID to make them unique and they all displayed
+great.
+...
+One theory is that there are characters that are fucking up the display.  I see
+weird asian shit in there.  I wonder if that is happening?  Some unusable
+character.
+
+Goddamn.  If I pull out the title/object names, it doesn't lag.  Granted, the
+text is smaller, but I wonder.   I'm going to try filtering out 
+non-Latin/English, which isn't useful to me anyway since I can't read anything 
+else.
+...
+I think I figured it out.  The issue is the text wrapping and forcing row height
+calculations, probably recomputing estimates inline for future rows.
+	...if that is true, then it stands that if I change the multi-line
+	display behavior to truncation it should be good.
+...
+So this explains a lot of what I was seeing...
+* the profiler didn't show my code as having an impact during these lags, which
+ruled out it being the reason during the dynamic text generation.
+* the text I created using lorem-ipsum + dynamic content was still the same
+basic height across rows so the estimates wouldn't have changed
+....
+It's encouraging that the list is so performant, given the right kind of 
+constraints on the row data.  I'll keep working on this tomorrow.
+
+Good day.
+
+
+
+Friday, February 16, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm starting to rethink my approach for this index.  It migyht be better managed
+as a set of fixed-sized rows for performance and the data organized cleanly in
+a traditional table cell format as opposed to a general list of crap.  The one
+problem is the highlighting, which I still think is important.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- COMPLETE: flag when collection is filtered
+				- COMPLETE: remove the collection item.  
+				the exhibits should be in the collection.
+				- fix my non-latin filtering
+				- fix the tests with now sorted content.
+				- how to identify the text in the exhbits for
+				highlighting and be fast?
+					- context --> matching text
+				- formatted text result - highlighted
+				- search by year
+				- search performance
+			- index display
+				- save context in user state
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+			- don't include non-latin fields: 
+				https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+One possible idea is to introduce a new kind of display item from the collection
+that does matching intelligently bssed on what it has available and what the
+caller wants to show maybe although that is sort of silly.   The UI should be
+doing formatting and bulding of attributed strings, etc.
+
+Ok, I'm reworking this.
+...
+The question right now is how best to match the text from the search input
+against the content in the strings of the exhibit?  Actually as I think about
+it now, I'm not sure that even matters.  Sure it is similar to what you might
+see in Google but it doesn't really add value to this experience right now.
+If I'm sure that the matching is accurate, who really cares where it exists in
+the item.
+....
+The approach to non-latin filtering sucks ass because it involves a number of 
+different things which are _very verbosely documented_ and not immediately
+clear about behavior.  It is a bit of a hack using implied unicode regular 
+expression matching against 'scripts' that are categories of characters, but
+I haven't a good idea how to represent latin plus additional punctuation like
+dashes.  It is so fucking frustrating.
+
+Not a great day.
+
+
+
+Saturday, February 17, 2024
+----------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to recalibrate and focus on the list output and probably the search
+field too.  I've been stuck in a swamp of fine details for too long.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- REJECTED: fix my non-latin filtering  UPDATE:
+				not a priority.
+				- COMPLETE: fix the tests with now sorted 
+				content.
+				- REJECTED: how to identify the text in the 
+				exhbits for highlighting and be fast?
+				- REJECTED: formatted text result - highlighted
+				- search by year
+				- search performance
+			- index display
+				- cell for index list item
+					- COMPLETE: isselected plus exhibit.
+					- COMPLETE: basic layout
+					- COMPLETE: selection
+					- ScrollViewReader to scroll with
+					keyboard selecgtion
+				- save context in user state
+				- localization updates.
+			- index search
+				- does search/filter get saved somewhere once
+				it is completed?
+				- search via query structure with all elements
+				 in it.
+				- identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+			- don't include non-latin fields: 
+				https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I have the list being laid out much better now and is sort of usable, which is
+very cool.  I'm going to stop for today and pick it up again tomorrow I think.
+Getting back to the UI feels like the right choice.
+
+Good day.
+
+
+
+Monday, February 19, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Back to it.  I'll continue to refine the search experience.  As I look at it, 
+there's a lot left to do with just search.  There's a bunch of little details
+like getting scrolling working better in the list, adding search-by-year, 
+improved search field, etc, etc.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- COMPLETE: search by year
+				- DEFERRED: search performance
+			- index display
+				- cell for index list item
+					- ScrollViewReader to scroll with
+					keyboard selecgtion
+				- save context in user state
+				- localization updates.
+			- index search
+				- COMPLETE: improved search field.	 
+				- COMPLETE: search by date.
+				- DEFERRED: search by department?
+				- does search/filter get saved somewhere once
+				it is completed?
+				- COMPLETE: search via query structure with 
+				all elements in it.
+				- DEFERRED: identify departments
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+			- don't include non-latin fields: 
+				https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+The search filtering is getting better.  
+....
+The expansion filter is working pretty well.  I'm getting tired today, but I'd
+like to be able to say this piece is done enough to move forward.  I'm going
+to see about some of the final bits.
+...
+The scrolling coordination with the keyboard is klunky.  I'll look at it 
+tomorrow.  SwiftUI is tiring.  This kind of guesswork at how something is
+supposed to function feels like shit.  It is very likely this is how things 
+will be done in the future with smarter machines, but right now the machines
+are fucking stupid and the results are less than satisfying.  I've got to
+find a way to keep my motivation going for this project, given the quality of
+what I have to produce in this time.  Maybe I'll get better with experience, but
+a part of me is wondering if it is worth it.
+
+
+
+Tuesday, February 20, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- inspector display
+				- stub for exhibit display
+				- add exhibit attributes
+				- queries for exhibit content.
+			- COMPLETE:model
+			- index display
+				- COMPLETE: cell for index list item
+					- COMPLETE: ScrollViewReader to scroll 
+					with keyboard selecgtion
+						- REJECTED: numeric id for 
+						scroll pos?
+				- COMPLETE: search bar styling.
+				- COMPLETE: add count.
+				- COMPLETE: save context in user state
+					- COMPLETE: fix save/reload of year.
+					- COMPLETE: verify is year filter 
+					being restored?
+				- COMPLETE: reset filter.
+				- localization updates.
+					- change text
+					- figure out pluralization in exhibits
+			- COMPLETE: index search
+				- DEFERRED: delay search start so old results 
+				are saved during typing.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.
+			- REJECTED: don't include non-latin fields: 
+				REJECTED: https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I am going to try to work on this scroll view reader initially today.  There
+are multiple problems.  One is that saving the current selected line isn't
+working.  I'm assuming the use of a lazy stack limits options because it would
+require that it scan through the items in order to identify the row in question.
+I'm wondering whether using a numeric id will allow it to work because it could
+interpolate that offset.
+...
+One thing that helped the keyboard behavior was changing where I scroll to the
+target row.  If I use `onReceive()` to hook the change to the selection state,
+then there is something about that that is out of sync with what is happening
+in the scroll view.  Perhaps it is that 'will change' notification that occurs
+right before it is modified and it is using an old value or something for
+the scroll view state.  However, if I put the scroll update into the keypress
+event, then it works fine.
+...
+I was able to fix the selection by using onChange with the exhibit collection,
+which had to be made equatable.  If that collection changes, that always means
+that selection is now different.  That reminds me that I need to reset 
+selection when the exhibit list changes.
+....
+I continue to have problems understanding the meaning of these different 
+variable types in SwiftUI, particularly when it applies to property wrappers.
+The abstraction is leaky enough that I imagine that I can initialize things
+in the goddamn Swift init() method, only to find it either can't happen (because
+it is something passed by EnvironmentObject) or it requires custom initialzer
+syntax (using underscore and sometimes even calling the .init() on the State
+directly).  I see the value of SwiftUI in terms of making the UIs behave more
+consistently, but the bastardization of the language is troubling.
+...
+Alright.  Pretty good day overall.  I have a lot more of the filtering working
+well and probably can wrap just the localization up tomorrow and then start
+looking at some of these other things.
+
+Good day.
+
+
+
+Wednesday, February 21, 2024
+----------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- inspector display
+				- COMPLETE: stub for exhibit display
+				- add exhibit ref attributes
+				- queries for extended exhibit content.
+			- COMPLETE: index display
+				- COMPLETE: localization updates.
+					- COMPLETE: change text
+					- COMPLETE: figure out pluralization 
+					in exhibits
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+			- REJECTED: don't include non-latin fields: 
+				REJECTED: https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I'm going to do the localization work and then jump into the property 
+inspector.
+...
+The localization work is updated and I should be good to go for the next thing,
+which is the property inspector.  This is ideally just a bunch of read-only
+data in a fixed-width format.
+...
+My plan for the exhibit inspector is to start with the reference data and
+probably make a section of it, then put the online data under it with photos
+probably when it is queried.  The queries and so on will require more thinking
+about caching, but I can get started.
+...
+The inspector sizing is completely fucked when it starts - not restoring the
+size correctly.  I'm going to convert over to the inspector pattern in the new 
+version of macOS and see how that looks.
+...
+This fucking inspector doewsn't allow me to set the ideal width at all when it
+starts.  I can give it a min/max, but no ideal.
+....
+I was able to get the right behavior by applying a frame(minWidth) until the
+view appears, and then letting the inspector take over with a `nil` to that
+minWidth parameter.
+
+Not a ton done today, but some.   More tomorrow.
+
+
+
+Thursday, February 22, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Property inspector work today.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- inspector display
+				- COMPLETE: add exhibit ref attributes
+				- COMPLETE: clean up artist data
+				- COMPLETE: localizations
+				- COMPLETE: link
+				- COMPLETE: add medium, tags
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+			- REJECTED: don't include non-latin fields: 
+				REJECTED: https://stackoverflow.com/a/45053031
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I'm not super thrilled about SwiftUI.  It feels like a mediocre replacement for
+the old ways.  The data synchronization is really good, but I feel like this
+could be done in a way that retains the control over UI.  Maybe in the app world
+that isn't a priority any more.  Getting eyeballs on lists and photos is now.
+...
+It annoys me that everything is different.  Why is a Grid different than a
+LazyVGrid?  I could see value in having column definitions in a Grid, so why
+don't I get that?  Why doesn't the experience translate?
+...
+Something works for a change.  The .gridColumnAlighment thankfully saved me a 
+lot of nonsense.
+
+I it a groove for a change and knocked out the reference inspector really 
+quickly.  It looks respectable.  Not perfect, but respectable.
+
+I'm taking this opportunity to do the things that make this better for layout
+and usability so that I can learn more about options and refine my technique.
+One example is adding string formatting customizations and little buttons to
+that grid.  Anything I add requires I work downward into the row and the
+text, making this more involved, but I figure that it is better to do this
+now in an effort to squeeze out the best result as opposed to trying to figure
+it out later in a 'real' project.  There's no advantage to making something
+quick and dirty here if my goal is to get better at SwiftUI.  It is a balance
+though.
+...
+That's it for today.  I have a great first step for the exhibit inspector and
+it feels like a usability improvement over the index alone.  The two working
+together allows for a fairly quick search, selection and then identification of
+the relevant content while keeping the user experience consistent for jumping
+into safari to check it out via the link.  I like it.
+
+Good day.
+
+
+
+Friday, February 23, 2024
+--------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Time to start the downloads.  I'll begin by clarifying my ideas on how it would
+work.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- rate limiter w/unit test
+					- request actor
+					- internal model with request data
+					- public model that allows modification
+					and has a reference to the exhibit
+					- caching
+			- inspector display
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+My idea for downloads is fairly straightforward.  The request to get the 
+'exhibit' is done with a reference item from the index.  The index then
+(a) requests the official item, (2) requests its photos and (3) pulls its page
+and parses it for descriptive content.  This is an 'exhibit' and has a 
+connection to the reference and can be modified.  The content retrieved
+should ideally be cached so that I can minimize on the network traffic later.
+I also need to find a way to restrict the traffic to 80 requests per second,
+which conceptually makes sense, but I'll have to think a minute about how
+that could be done.
+
+I'm thinking of building the API into an actor because it is inherently 
+asynchronous and provides data protection for state.  That's one detail.
+
+The question is the rate-limiting.  The site says:
+
+	`Please limit request rate to 80 requests per second.`
+
+I think the operative phrase is _request rate_.  I can only _request_ up to
+80 per second.  
+
+One option in my actor is to have a method that makes a request and that method 
+first identifies the 'second' we're operating-in using a standard time() call
+or similar and then checks a hash of that second to a count or array to see if 
+there are available spots to do requests.  If space exists it starts a task
+to issue the request and if space doesn't exist in that second, then...??
+
+Clearly, I need to wait until the capacity improves, but ideally this is a
+very simple thing, ie 'await obj.waitForCapacity()' or something.  What if
+I used two actors?  I have a main one which is the network requestor and an
+inner one which is the rate limiter.  The rate limiter has a very simple
+API that provides a serialized FIFO experience.
+
+I can use tasks internally to verify that everything coming-in is processed
+fairly and in order of request.  That is, I wait on a Task, maybe just that
+it was cancelled, and then return.  In the background, I have a Task running
+on a timer every second simply resetting an internal count and then popping
+items off the pending stack and cancelling them until we fill the count.  That
+feels about right and would be a great first step.  If I can make that
+rate limiter first then the networking is an easy follow-up activity.
+
+My plan is to focus on the rate limiter completely in a unit test, which is a
+good move no matter what.  I should be able to rigorously verify that it is
+maxing out the capacity with very clear, objective results.  This will be a good
+exercise because I'll get to play with task groups in addition to the actors.
+...
+I didn't get a chance to run what I have yet, but I'll jump on that tomorrow.
+Good day at least because I know what I'm going to do next.
+
+
+
+Saturday, February 24, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm anxious to see if the rate limiter works.  It's not super great to write
+code and just put it down, but we'll see what we've got today.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- COMPLETE: rate limiter w/unit test
+					- COMPLEE: request actor
+					- COMPLETE: internal model with request
+					 data
+						- COMPLETE: initial cut for 
+						basic test
+						- COMPLETE: complete modeling
+						- COMPLETE: find items with 
+						limited data and add them to 
+						the test.
+					- retrieve photos from client API
+					- public model that allows modification
+					and has a reference to the exhibit
+					- caching
+			- inspector display
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+With minor adjustments the rate limiter is now working well and the black-box
+tests produce predictable results.  I'm pleased that I can move forward with
+some confidence now.   I'm going to dial this back a good bit from their limit
+anyway just because I think it is better to be way below any point of concern,
+espeially for somenthing like this.
+...
+I think the internal model is going to use the back-end terminology of 'object'
+for it to differentiate it from the exhibit concept I exported.
+...
+I'm starting to have more experiences where I have an idea and I am able to 
+knock out the UI for it quickly.  I just had the idea to build a second button
+for the exhibit that copied the object id because I wanted to quickly go take
+it into Postman to verify things.  I was able to build a reusable button and
+then wire it up relatively fast.
+...
+The API isn't too terribly bad, but a little inconsistent.  The mixture of
+empty strings with null values is somewhat inconvenient because it raises the
+question about what I might find later, but I"m creating some decent 
+infrastructure to diagnose issues.
+
+I'm going to stop there for today.  Good day.
+
+
+
+Monday, February 26, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I should be ready to start building the model for the exhibits.  I'm pretty
+sure that I'm going to use an exhibit reference to build the exhibit.  Not
+sure yet if I'll save the reference in it like I was imaginging yesterday.
+Seems sort of silly considering the 'real' data from the site is more reliable.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- api to get an exhibit from ref
+						- basic modeled object 
+						- refine attribute descs.
+						- network client is also a
+						process-wide singleton.
+					- retrieve photos from client API
+					- caching
+			- inspector display
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I'd wanted to work yesterday but got sucked into stuff around here.  Back to
+it today.
+...
+The exhibit is intended to be a primary element of the document so it must be
+codable and otherwise usable without the index.  It strikes me that the 
+index with a connected cache could be useful at least initially, but I can't 
+count on it later when the exhibit is deserialized without a costly connection
+step for each one.  I think what I'll do is provide a way to minimize the back-
+end calls for things like preview images initially if they can come from cache
+but have a normal network path for all other scenarios after deserialization.  
+That would involve having a handle to the cache in the exhibit when it is
+fired up.  The cache would be something that the index maintains and would
+likely be an actor also.  I'm getting more used to the actors and like what they
+offer, particularly for singletons.
+...
+Ok, all this makes sense.  
+....
+I have a first cut of the exhibit interface which mainly just santizes the 
+content from the object.  I'll start adding some useful behaviors to it
+tomorrow.
+
+Good day.
+
+
+
+Tuesday, February 27, 2024
+---------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'd like to really knock out this model today and start integrating it into
+the designer.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- COMPLETE: api to get an 
+						exhibit from ref
+						- COMPLETE: basic modeled 
+						object 
+						- COMPLETE: refine attribute 
+						descs.
+						- COMPLETE: network client is 
+						also a process-wide singleton.
+						- COMPLETE: id for exhibit is 
+						UUID.
+						- how to test exhibit?
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+			- inspector display
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+How do I test the exhibits?  The challenge is getting good data for all these
+goddamn little attributes in the object.  I suppose I could create a simple
+conversion function for my test data but it would be incomplete.  Another
+possibility is to get _one good item_ by downloading it and hand-converting it
+over to the format so that it lines up well.
+
+I think the hand-built object is a better choice.  I could even build some 
+local images programmatically that can be used for testing and save them in
+/tmp to make loading fast without an async cost.
+....
+The testing thing is coming along but I need to save in the non /tmp area for
+it to work.  I'll play with this more tomorrow.
+
+
+
+Wednesday, February 28, 2024
+----------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+Back to it.  If I can get the test object built with some photos, I can 
+start adding it to the UI.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- COMPLETE: how to ~test~ mock 
+						exhibit UI?
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I got the file being cached, but now I'm wondering about this API.  There's
+the desire to have the exhibit interact with the cache to pull data more
+quickly, but I'm not thrilled about the idea of exposing all the data 
+machinations pulling from a URL and then conditionally converting it into
+an NSImage or UIImage before building an Image with it.  I'd like to just
+ask for the image asynchronously.  The question is whether to create extensions
+for SwiftUI in the MetModel?
+
+There is some convenience to putting the SwiftUI into the model, but it sort
+of breaks abstractions.  I think I'm going to obscure the URL interfaces for
+photos and then put helpers into the main app for this purpose. 
+....
+I've been deep in this exhibit sample image stuff and am losing context on
+where I need to go.
+
+I've learned that SF symbols don't automatically get rendered as templates 
+with the stroke color or otherwise.  It is likely there's a compositing 
+solution for that but I'm not going to worry about it since it is just intended
+to give me something to look at that isn't a solid background color.
+....
+You know, since my attention is now shot for anything else, maybe I'll just
+learn a bit more about what I can do to improve these images.
+...
+I found out how to do it.  I'd remembered using transparency layers years ago
+with Core Graphics and found that if you ask for the current graphics context
+you can create one and set the clipping region to the CGImage of the SF symbol,
+while then filling the region.  It is importantant when creating the cgImage
+from the NSImage that you give it information on the proposed rect and context
+or it won't be rendered cleanly.  It isn't much, but I did learn something.
+
+Ok, that's it for today.  There is the tiniest bit of UI integration started
+with more to come.  I still have to work out all these asynchronous calls and
+the best way to integrate them all.  I suppose there is something to be said
+for making the UI asynchronous, but it feels like they are layered-upon-layered
+with async methods.  Maybe I'm just too deep into this one thing to see it
+right now.
+....
+....
+I'm considering the possibility that I should maybe be caching these images
+that I retrieve in the exhibit object itself at runtime - but don't save them.
+If it is in memory briefly, that's not a huge thing and if they're in the
+tour designer, we'd want them to be resident.  When looking in the inspector
+when we're just building a temporary view as we're going through the index
+items, the object will just get discarded when we go to the next item in the
+list.  Maybe it is ok.
+
+
+
+Thursday, February 29, 2024
+----------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+UI work today with the real exhibits.  It strikes me that async patterns are
+going to exist all through most models.  The UIs need to be able to accommodate
+them no matter what I do.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- COMPLETE: object for saving 
+						image data
+						- COMPLEE: cache interface into
+						the exhibit 
+						- how to hook the change when
+						view is rebuilt?
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- read about model data in ObservedObject docs
+					- look at @Observable wrapper - what
+					does that mean?
+				- redisplay basic exhibit data 
+					- is using @State for the async data
+					a good idea?
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I'm wondering if I shouldn't have a different approach for dealing with images
+in a platform independent way?   At some point I'm going to want to pull out
+real image data or handles so that I can save them for the tours.  The
+conversions I have now are nice, but not great.  One issue is that they are
+retrieved and thrown away.  Even if it goes through the cache, there is still
+the disk access and bitmap loading every time I want to use them.  That's better
+than network, but still not perfect.  They should be cached in RAM.  With the
+exhibits, it is reasonable to cahce their bitmaps in RAM because they only
+exist for a brief time in the inspector for the index and the tour plan should
+have them available at all times regardless.
+
+I think I should introduce a cache into the exhibit by key that is in RAM only
+and not encoded.  That way I can save things into it easily.  That cache will
+store the data and an image handle for these images.  
+
+Then I need a better way of representing the image data so that I can get the
+original content again very quickly during editing.
+....
+As I think about it, this image translation and caching should be in the model
+itself since it is cross-platform.  It is more natural to have it do this type
+of work and return platform-specific image handles when requested along with
+the data.  Only the last mile translation into a SwiftUI image would be in the
+main app and at that point there should be little to no need of an #if 
+statement.
+...
+I have a new category of problem that I'm not clear about.  When the inspector
+view has changed I don't get an onAppear again.
+...
+The behavior suggests that onAppear occurs only when the view is completely
+rebuilt in the UI.  The re-instantiation of the view _does not equate with
+rebuilding the view_ by SwiftUI, which I suppose is one way of looking at it.
+....
+I think part of the issue is that I have exhibits as observable objects, but
+storing them as @State variables, which is an antipattern.  The reason was to
+support optionals, which ObservedObject doesn't allow.  As a fundamental
+principle, I should never save an ObservableObject in a @State, even if
+I have Equatable support.  I'm wondering if I could create a custom class that
+would act as an ObservableObject, but allow an optional value.  Sort of
+a wrapper for the optional type.
+...
+This is very confusing.  I need to read about the model data again in the
+ObservedObject page.
+....
+I'm getting into the meat of SwiftUI now.  It feels fucking frustrating to
+step backward again, but I suppose this is necessary.  It shows the limit of
+my understanding, which I'd need to be really good with this tech.
+
+
+
+Friday, March 1, 2024
+---------------------
+I did some reading last night and learned that Apple has added an '@Observable'
+macro that makes classes operate like values and case use @State/@Environment
+property wrappers.  Also, they support optionals (fixes this issue) and 
+are smarter about how the compute view updates, only impacting views that
+actually reference the data in their body.  Although you can make it work
+with @ObservedObject and @StateObject, it would be better to get on the train
+for this new way.  That's going to be my next priority - to upgrade what I have
+so far to use the new macro.
+
+
+
+Saturday, March 2, 2024
+-----------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+My priority is to switch over to the new macro.
+....
+TODO:
+	- framework
+		- COMPLETE: convert to Observable macro.
+			COMPLETE: REF: https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro
+		- Designer-v1 - bootstrapping:
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- COMPLETE: how to hook the 
+						change when view is rebuilt?
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- COMPLETE: read about model data in 
+				ObservedObject docs - look at @Observable 
+				wrapper - what does that mean?
+				- COMPLETE: redisplay basic exhibit data 
+					- COMPLETE: is using @State for the 
+					async data a good idea?
+				- Wait for all the photos to be loaded before
+				showing the exhibit data.
+				- pattern for loading the exhibits in the
+				inspector
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I no longer need @Published exports or to adopt the ObservableObject protocol.
+....
+I learned indirectly by looking at something online there is a:
+	'Self._printChanges()' 
+method that can be run in the body to see what caused the invalidation to occur,
+which may be useful.
+	REF: https://www.avanderlee.com/swiftui/observable-macro-performance-increase-observableobject/
+...
+Also, I see that I misread the new Observable macro page that I need to use
+@Bindable now for observed objects, not @Binding.  It is odd that they added
+support for @State and @Environment, but not @Binding.
+...
+I'm going to re-read that migration document _again_ and this time pay close
+attention to the property wrappers and macros.
+....
+Ok, I think I basically get it.  Somewhere I read that using @Binding for an
+object would trigger updates _only if the reference changes_, not if the
+referenced object attributes change, which feels like an easy mistake to have
+happen but I guess if I'm not getting change updates, I'll know why.
+...
+Alright, I need to rewind and start refining this exhibit display.
+...
+I think the first step is to figure out the asynchrony.  My sense is that
+I should keep the progress under the exhibit entirely.
+....
+Best laid plans...
+
+I tried using an optional with @Bindable, but that wasn't happening.  
+...
+SwiftUI isn't very fun.  It is a lot of subjective nonsense about what 'I think
+the computer wants to see' as opposed to just understanding what the computer
+does.  I'm going to be done for today.
+
+
+Monday, March 4, 2024
+-----------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm ready to dig back into the exhibit display.  I need to get the photos
+downloading first.  My plan is to allow it to display if the small photo
+is retrieved or we know about it and then have the other larger photos get 
+retrieved as a second phase.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- Bug: inspector is not wrapping text items that it is
+			displaying.
+				- update test for ref section
+				- fix grid vertical spacing
+				- add testing option to the document for
+				better previews
+				- preview for inspector view (to verify)
+				- fix the inspector 
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- two phase load
+					- exhibit + small image
+					- all large images.
+				- display unique new data from the real exhibit
+				- pattern for loading the exhibits in the
+				inspector
+				- queries for extended exhibit content.
+			- add animations to import and screen transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I finally have the additional images being pulled.  Now I need to get started
+on the layout of the exhibit.
+...
+Hmmm.  I was just thinking about this exhibit item.  It has most of the same
+data as the indexed item - likely more current.  The question is what will I
+show in the inspector?  Some of it will be editable.
+....
+I learned that if you add 'verticalSpacing' to a Grid, then it will apparently
+restrict vertical resizing to accommodate line wrapping in some scenarios.  I'm
+not 100% sure under which condidtions that occurs because some of my items
+did show the right wrap behavior, but there is possibly something subtle 
+happening.
+
+Oddly enough that is _part_ of the problem in the inspector, but not the whole
+problem.  For whatever reason, it isn't clipping the item.
+...
+Fuck me.  The reasons for why it performs the layout it does is a mystery.
+...
+There is definitely something going on with the split view.  I can fix the
+grid by pulling out the spacing and it does the right thing but then when I
+use that inspector specialization on the split view, it doesn't set firm
+constraints on the width of the item.
+
+This is extremely irritating.  It is so slow to get basic behavior out of this
+fucking framework.  it is so much trial and error to understand its vocabulary
+and how it will work in different contexts, then hacking to make it do exactly
+that thing.
+
+
+Wednesday, March 6, 2024
+-------------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I'm going to chase this inspector problem and see if I can address it.  It may
+be that I need to move back to the old approach and not use the new inspector
+tech.  I'm going to keep the inspector as is and create a very simple view to 
+see if it will do the wrapping.  Maybe there's a fucking modifier I'm missing
+here.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- COMPLETE: Bug: inspector is not wrapping text items 
+			that it is displaying.
+				- COMPLETE: update test for ref section
+				- COMPLETE: fix grid vertical spacing
+				- DEFERRED: add testing option to the document 
+				for better previews
+				- DEFERRED: preview for inspector view (to 
+				verify)
+				- COMPLETE: fix the inspector
+			- exhibit caching
+				- COMPLETE: set cache directory in index
+				- COMPLETE: cache exhibit object
+				- cache exhibit file
+			- tour designer UI to influence inspector display??
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- COMPLETE: two phase load
+					- COMPLETE: exhibit + small image
+					- COMPLETE: all large images.
+				- display unique new data from the real exhibit
+					- how to get data that is useful to
+					mine into that space for editing
+					purposes?
+				- COJMPLETE: pattern for loading the exhibits 
+				in the inspector
+				- COMPLETE: queries for extended exhibit 
+				content.
+			- DEFERRED: add animations to import and screen 
+			transitions.
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I think I figured it out - it has something to do with the large photo I'm
+displaying for the exhibit.  It appears that the photo is pushing the dimensions
+of the inspector display region outward even though the inspector is a fixed
+width.  That, in-turn causes the exhibit reference to be quietly resized so
+that it larger than the width of the inspector itself.
+
+	...the way I figured this out was to start at the top of the inspector
+	hierarchy and verify at each stage whether it worked or did not using
+	initially just simple Text(), then my custom views, gradually commenting
+	out and uncommenting pieces until it was ultimately shown to be 
+	related to the Image display.
+...
+The issue ultimately appears to be that I didn't have a 'resizable()' attribute
+on the image which caused it to force the size of the frame of the outer view
+outward farther.
+... 
+I'm so fucking tired today; I only slept about 4 hours last night.  My ability
+to think about this problem is severely diminished.
+...
+The exhibit cache is the next piece of the puzzle, I think.  I need to improve
+the efficiency of retrieval to support editing.
+...
+I suppose if I can get the basics of caching in place I should probably step
+back and think about the UI experience again and how the tour designer factors
+into this because it will influence what is exposes in the exhibit and what
+I can modify.  Ultimately, I'll need to have the app concept to force 
+requirements into the designer.  Once caching is in place, I have raw data but
+don't yet know how it will be curated.
+...
+The first steps of caching are in place.  I need to just add the file caching
+and I'll be good to continue with the tour design.
+
+
+Thurday, March 7, 2024
+-----------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+File caching today and I'll work on the design for the tours.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- COMPLETE: exhibit caching
+				- COMPLETE: cache exhibit file
+			- app prototype
+				- quickly save photos from exhibits to desktop
+				- import photos of different aspect ratios into
+				 simple app and get a paging swipe interaction 
+				between maybe 10 exhibits and try it out 
+					- what is the rule for aspect in the
+					display if the photo fills the screen?
+					- can the device be rotated?
+			- tour designer UI to influence inspector display??
+				- maybe the app needs a prototype to then
+				influence the tour designer
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- inspector display
+				- display unique new data from the real exhibit
+					- how to get data that is useful to
+					mine into that space for editing
+					purposes?
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I noticed something unusual when retrieving the data for these items in the UI.
+When switching to a new exhibit, it briefly shows the image from the previous
+exhibit before changing it.  I suspect this has something to do with the
+@State for the images.
+
+It turns out it does.  I have to say that the way this manages data in the
+views is really hard to get used-to.
+....
+Ok, bam.  I have the cache in place and it works great.  Now I think I need
+to figure out what this app is going to look like, but that can wait until
+tomorrow probably so I can recalibrate my mind for it.
+
+In terms of priorities, I think the app needs to focus on displaying a single
+tour right now, no more than one with the following properties:
+* beauitful imagery
+* accurate details
+* immediate access to supplemental content
+* convenient interactions
+
+To that end, the exhibit photo is the only critical content.  If there's no
+photo, it has no value to the app.  I suppose that's point number 1.  From
+there, the photo needs to be presented beautifully, even if it doesn't match
+the screen.  That's more than just using the default image display with scaling,
+but something more involved I think.  I'll only have ideas on this when I 
+start seeing it.  I think I'm going to build the prototype with 10 decent photo
+examples and individual custom screens for each so that I can quickly just
+page through them and see what it feels like while adding custom layout for
+each photo.
+...
+Alright, so I think get a file exporter for the exhibit done next so I can 
+quickly export all these items and then start pulling them into a prototype
+that I can interact with.
+
+
+
+Saturday, March 9, 2024
+-----------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I was fucked up by my shingles shot yesterday, and tied up this morning, but I'm
+going to try to accomplish something.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- app prototype
+				- COMPLETE: quickly save photos from exhibits 
+				to desktop
+				- import photos of different aspect ratios into
+				 simple app and get a paging swipe interaction 
+				between maybe 10 exhibits and try it out 
+					- export some good candidates
+					- stub app
+					- what can be used for paging and get
+					something working
+					- add each of the phots on each page
+					- what is the rule for aspect in the
+					display if the photo fills the screen?
+					- can the device be rotated?
+			- tour designer UI to influence inspector display??
+				- maybe the app needs a prototype to then
+				influence the tour designer
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- I think the designer needs a bookmark button for
+			the index so that I can easily track ones that are good
+			- inspector display
+				- display unique new data from the real exhibit
+					- how to get data that is useful to
+					mine into that space for editing
+					purposes?
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+I learned that I can probably get the type of paging I want from the ScrollView.
+
+My issue is whether I feel like this is a good use of my time.  The objective
+is to show I can built SwiftUI apps, but the _question_ is whether I really want
+to.  God I am irritated that this is what we're spending our time inventing.  It
+is such a dumbing down of the craftsmanship of this work.  
+
+I also had the really sobering experience of not being able to run my code 
+because I didn't accept the license agreement on Apple's developer site.  While
+I appreciate the need to do this for published apps, I see no reason why I 
+shouldn't be allowed to compile my fucking code to run on my own machine.  What
+ the fuck kind of insult is that?  Why would I spend my time learning this 
+nonsense shit only to have them shut me down from even being able to use their 
+fucking compiler.  At this point I've been learning this for months and have a 
+sort of mediocre IDE-like app to show for it that saves some images off the 
+Internet.  Not very compelling.  Now that I am starting to see more of the 
+chains (thanks Sweeney) I am becoming more disillusioned with this pursuit.
+
+I'm going to get away from this today.  Not sure what I'm doing next.
+
+
+Sunday, March 10, 2024
+-----------------------
+NAME: MetTours, MetSpaces, MetMoments, MetMinded
+MVP:  A single embedded tour that pulls context and resources using the APIs.
+IDEA: App that provides a beautifully-interactive experience with the Met Art
+      museum while integrating iOS technologies that enhance the immersion.
+DATA: https://metmuseum.github.io
+...
+I need to get this shipped.  Sure it looks like shit right now, but I've learned
+a lot and more importantly have to exist in their world.  If the industry 
+values this garbage, I should at least be reasonably familiar with it to have
+a shot at continuing employment for the time being.  I'll make plans for a new
+pivot while I work.
+....
+TODO:
+	- framework
+		- Designer-v1 - bootstrapping:
+			- app prototype
+				- import photos of different aspect ratios into
+				 simple app and get a paging swipe interaction 
+				between maybe 10 exhibits and try it out 
+					- COMPLETE: export some good candidates
+					- COMPLETE: stub app
+					- COMPLETE: what can be used for paging
+					 and get something working
+					- COMPLETE: add each of the phots on 
+					each page
+					- figuure out the best display for
+					a single image
+					- what is the rule for aspect in the
+					display if the photo fills the screen?
+					- can the device be rotated?
+			- tour designer UI to influence inspector display??
+				- maybe the app needs a prototype to then
+				influence the tour designer
+			- model
+				- exhibit query
+					- public model that allows modification
+					with full exhibit data and reference
+					to internal content.
+						- additional images iter
+					- exhibit client query should group
+					the same requests together
+					- retrieve photos from client API
+					- caching
+					- the exhibit tasks to download probably
+					should respect cancellation.
+					- the network client should probably
+					respect cancellation after it is rate
+					limited.
+			- I think the designer needs a bookmark button for
+			the index so that I can easily track ones that are good
+			- inspector display
+				- display unique new data from the real exhibit
+					- how to get data that is useful to
+					mine into that space for editing
+					purposes?
+			- initial sizing of the panes is still not great when
+			loading.  if you size the window before changing the
+			panes they revert to their odd giant size.  UPDATE:
+			now the inspector doesn't retain the size at all.
+				- convert to inspector pattern
+				- tour editor sizing
+			- READ: https://www.hackingwithswift.com/books/ios-swiftui/layout-and-geometry-introduction
+		- DESIGN: objects APIs (probably classes per object)
+			- FYI: ObjectIndex --> ExhibitRef --> Exhibit  --> Tour
+			--> Plan (one item begets another)
+			- ObjectIndex creation, search, etc. from MetObjects db
+				- Codable
+				- can hide items to not reappear
+			- exhibitref --> exhibit
+				- exhibit is observable and Codable
+				- returns resources using Met API
+				- cached
+			- tour entity
+				- exibit + exhibit + exhibit >> tour
+			- plan entity?
+				- tour + tour >> plan
+	- READ: 
+		- https://designcode.io/swiftui-handbook-transform-animations
+	- Github.io - I may want a personal site for myself and my portfolio, 
+	at least when I publish, I should do so there.
+		- consider it as a way of putting dynamic app content on the
+		Internet without hosting costs.
+....
+It feels like I'm learning about layout all over again.  The approach that
+photos use to take up space keeps biting me.  
+...
+Fuck.  This UI system takes me out of the game constantly.  I need to figure out
+how to stop getting derailed by shit I don't know.
+...
+Ok, so the first photo, what's wrong with it?
+* It has that blank bar around the actual image
+* Its aspect ratio when fit to the screen generates large blank space at the 
+top and bottom.
+....
+Goddamn.  I can't shake the thought that I'm slowly wasting all my time in an
+effort to make this work.  It isn't clear to me whether the tech is just a 
+meaningless pain in the ass or my process is broken.
+	..I'll try to improve my process.
+....
+Another thing that comes to mind with this prototype is that using a scroll
+view for it doesn't feel terribly refined with the half drag showing the new
+image.  The overall tour presentation is lacking style.
+...
+More to the point the photos are boring just displayed in the center like that.
+There's no impact to seeing them and why should anyone care?  It might be
+a critical piece of history, but there's no outright indication.  The layout
+of the screen can't just be a full sized photo.
+
+Not much done again, but I need to try to make this work, like it or not.

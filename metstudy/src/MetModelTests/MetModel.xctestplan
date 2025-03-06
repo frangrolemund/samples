@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "40043BDC-286C-49BC-9C9F-CB03A4DD6495",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MetStudy.xcodeproj",
+        "identifier" : "A16E30AE2B52EA980004030F",
+        "name" : "MetModelTests"
+      }
+    }
+  ],
+  "version" : 1
+}
