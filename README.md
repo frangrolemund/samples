@@ -2,7 +2,7 @@
 This repo as some coding and project samples I've worked on over the years and 
 continue to pursue independently when time permits.  My preferred way to use
 my free time is to work on uncommon problems that I can dig into for a while
-without seeing sunlight.  These generally reflect that sentiment.
+without seeing daylight.  These generally reflect that sentiment.
 
 Everything here is of my own invention and independent work.  References to
 'RealProven, LLC' are to my own company.
