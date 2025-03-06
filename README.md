@@ -1,6 +1,6 @@
 # Overview
 This repo as some coding and project samples I've worked on over the years and 
-continue to pursue independently when time permits.  My preference my spending 
+continue to pursue independently when time permits.  My preferred way to use
 my free time is to work on uncommon problems that I can dig into for a while
 without seeing sunlight.  These generally reflect that sentiment.
 
